@@ -2,26 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
   }
-}
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+  html {
+    -webkit-tap-highlight-color: transparent;
+    @apply bg-giotto-paper text-giotto-ink;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  body {
+    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    background:
+      radial-gradient(circle at top, rgba(184, 146, 74, 0.14), transparent 28%),
+      linear-gradient(180deg, #faf8f4 0%, #f3efe6 48%, #f7f3ec 100%);
+    @apply min-h-dvh min-h-[100dvh] text-giotto-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-serif {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+  }
+
+  ::selection {
+    background: rgba(184, 146, 74, 0.2);
+    color: #061230;
   }
 }

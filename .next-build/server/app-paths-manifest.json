@@ -1,0 +1,12 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/icon.png/route": "app/icon.png/route.js",
+  "/t/[tableId]/page": "app/t/[tableId]/page.js",
+  "/page": "app/page.js",
+  "/table/[tableId]/complaint/page": "app/table/[tableId]/complaint/page.js",
+  "/table/[tableId]/menu/page": "app/table/[tableId]/menu/page.js",
+  "/table/[tableId]/cart/page": "app/table/[tableId]/cart/page.js",
+  "/table/[tableId]/page": "app/table/[tableId]/page.js",
+  "/table/[tableId]/waiter/page": "app/table/[tableId]/waiter/page.js"
+}

@@ -1,0 +1,43 @@
+/**
+ * Резервные стили из /public — отдаются напрямую, без хеша в /_next/static.
+ * Если основной бандл Tailwind/Next не подгрузился (кэш Safari, «битый» .next),
+ * страница всё равно не остаётся «голым» HTML.
+ */
+:root {
+  color-scheme: light;
+  --gf-paper: #f3efe6;
+  --gf-cream: #faf8f4;
+  --gf-navy: #0a1f4a;
+  --gf-ink: #0f172a;
+  --gf-muted: #64748b;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--gf-paper);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--gf-ink);
+  background: linear-gradient(to bottom, var(--gf-cream), var(--gf-paper));
+}
+
+main {
+  box-sizing: border-box;
+}
+
+a {
+  color: var(--gf-navy);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}

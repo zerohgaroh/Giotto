@@ -1,101 +1,62 @@
-import Image from "next/image";
+import Link from "next/link";
+import { GiottoLogo } from "@/components/guest/GiottoLogo";
+
+const DEMO_TABLES = ["1", "2", "3", "4", "5", "demo"] as const;
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="mx-auto flex min-h-dvh max-w-guest flex-col bg-gradient-to-b from-giotto-cream via-giotto-paper to-giotto-paper px-6 py-12">
+      <div className="flex flex-1 flex-col justify-center text-center">
+        <div className="flex justify-center">
+          <GiottoLogo size={112} priority />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-giotto-muted">
+          Ristorante
+        </p>
+        <h1 className="mt-2 font-serif text-[clamp(2rem,8vw,2.75rem)] font-semibold tracking-tight text-giotto-navy-deep">
+          Giotto
+        </h1>
+        <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-giotto-muted">
+          Меню, вызов официанта и обратная связь с телефона. Откройте страницу стола — как после
+          касания NFC-метки на столике.
+        </p>
+
+        <div className="mx-auto mt-10 w-full max-w-xs">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-giotto-navy-soft">
+            Демо столы
+          </p>
+          <ul className="mt-3 grid grid-cols-2 gap-2.5">
+            {DEMO_TABLES.map((id) => (
+              <li key={id}>
+                <Link
+                  href={`/table/${id}`}
+                  className="flex min-h-[3rem] items-center justify-center rounded-giotto-lg border-2 border-giotto-navy bg-white font-sans text-[14px] font-semibold text-giotto-navy shadow-lift transition hover:bg-giotto-navy hover:text-white active:scale-[0.99]"
+                >
+                  Стол {/^\d+$/.test(id) ? `№${id}` : id}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <details className="mx-auto mt-12 max-w-md rounded-giotto-lg border border-giotto-line bg-white/80 px-4 py-3 text-left text-[13px] text-giotto-muted backdrop-blur-sm open:shadow-lift">
+          <summary className="cursor-pointer select-none font-medium text-giotto-navy-deep">
+            NFC и короткая ссылка
+          </summary>
+          <p className="mt-3 leading-relaxed">
+            На физическую метку лучше записать полный URL вида{" "}
+            <span className="font-mono text-[12px] text-giotto-ink">
+              https://ваш-домен/table/5
+            </span>
+            . Для компактной записи есть редирект{" "}
+            <span className="font-mono text-[12px] text-giotto-ink">/t/5</span> → тот же экран.
+          </p>
+          <p className="mt-2 leading-relaxed">
+            Если в Safari после перезапуска сервера «пропали» стили, закройте вкладку и откройте
+            адрес снова — это кэш старых файлов <span className="font-mono text-[12px]">/_next/static</span>.
+          </p>
+        </details>
+      </div>
+    </main>
   );
 }
