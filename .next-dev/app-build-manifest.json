@@ -1,5 +1,16 @@
 {
   "pages": {
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
     "/table/[tableId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -10,11 +21,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/table/[tableId]/layout.js"
     ],
-    "/layout": [
+    "/table/[tableId]/menu/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/layout.css",
-      "static/chunks/app/layout.js"
+      "static/chunks/app/table/[tableId]/menu/page.js"
     ],
     "/table/[tableId]/waiter/page": [
       "static/chunks/webpack.js",
@@ -25,16 +35,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/table/[tableId]/complaint/page.js"
-    ],
-    "/table/[tableId]/menu/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/table/[tableId]/menu/page.js"
-    ],
-    "/table/[tableId]/cart/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/table/[tableId]/cart/page.js"
     ],
     "/_not-found/page": [
       "static/chunks/webpack.js",
