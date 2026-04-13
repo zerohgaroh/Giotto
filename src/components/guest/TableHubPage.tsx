@@ -11,17 +11,20 @@ import {
   X,
 } from "lucide-react";
 import { tableLabelFromId } from "@/lib/table-label";
+import { useRestaurantData } from "@/lib/restaurant-store";
 import { GiottoLogo } from "./GiottoLogo";
 
 type Props = { tableId: string };
 
 export function TableHubPage({ tableId }: Props) {
+  const { data } = useRestaurantData();
+  const { profile } = data;
   const label = tableLabelFromId(tableId);
   const base = `/table/${tableId}`;
   const [wifiOpen, setWifiOpen] = useState(false);
   const [wifiCopied, setWifiCopied] = useState<"idle" | "password" | "all">("idle");
-  const wifiName = "Giotto-Guest";
-  const wifiPassword = "buonappetito";
+  const wifiName = profile.wifiName;
+  const wifiPassword = profile.wifiPassword;
 
   const btn =
     "flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-[1.55rem] border-2 border-giotto-navy bg-white px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.06em] text-giotto-navy shadow-lift transition active:scale-[0.99] hover:bg-giotto-navy hover:text-white";
@@ -55,6 +58,16 @@ export function TableHubPage({ tableId }: Props) {
       </header>
 
       <section className="relative mt-8 overflow-hidden rounded-[2.3rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.78))] px-6 pb-8 pt-8 shadow-card backdrop-blur-md">
+        {profile.banner ? (
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: `url("${profile.banner}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        ) : null}
         <div className="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.18),transparent_72%)]" />
         <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-giotto-gold/40 to-transparent" />
 
@@ -63,18 +76,19 @@ export function TableHubPage({ tableId }: Props) {
             <GiottoLogo
               size={118}
               priority
+              src={profile.logo}
+              alt={profile.name}
               className="ring-giotto-gold/20 ring-offset-0"
             />
           </div>
           <h1 className="mt-6 font-serif text-[3.1rem] font-semibold uppercase leading-none tracking-[0.08em] text-giotto-navy-deep">
-            Giotto
+            {profile.name}
           </h1>
           <p className="mt-2 max-w-xs text-[13px] uppercase tracking-[0.3em] text-giotto-muted">
-            Table Service
+            {profile.subtitle}
           </p>
           <p className="mt-5 max-w-xs text-[14px] leading-relaxed text-giotto-muted">
-            Меню и сервис именно для вашего стола. Всё открывается сразу после касания
-            NFC-карточки.
+            {profile.description}
           </p>
         </div>
       </section>

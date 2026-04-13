@@ -1,0 +1,401 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.app{display:flex;min-height:720px;background:var(--color-background-tertiary);font-family:var(--font-sans);}
+.sidebar{width:210px;flex-shrink:0;background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;}
+.logo{padding:14px 14px 12px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.logo-name{font-size:14px;font-weight:500;color:var(--color-text-primary);}
+.logo-sub{font-size:10px;color:var(--color-text-tertiary);margin-top:1px;}
+.nav{padding:8px 0;flex:1;}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-left:2px solid transparent;transition:all .12s;}
+.ni:hover{color:var(--color-text-primary);background:var(--color-background-secondary);}
+.ni.active{color:var(--color-text-primary);background:var(--color-background-secondary);border-left-color:#378ADD;font-weight:500;}
+.ni-icon{font-size:13px;width:16px;text-align:center;}
+.nbadge{background:#E24B4A;color:#fff;font-size:9px;font-weight:500;border-radius:8px;padding:1px 5px;margin-left:auto;}
+.user-block{padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);}
+.user-name{font-size:11px;font-weight:500;color:var(--color-text-primary);}
+.user-role{font-size:10px;color:var(--color-text-tertiary);}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:48px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;}
+.page-title{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.clock{margin-left:auto;font-size:12px;color:var(--color-text-secondary);font-variant-numeric:tabular-nums;}
+.content{flex:1;padding:12px;overflow-y:auto;}
+.view{display:none;}
+.view.active{display:block;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px;}
+.kpi{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;}
+.kpi-l{font-size:10px;color:var(--color-text-secondary);margin-bottom:3px;}
+.kpi-v{font-size:20px;font-weight:500;color:var(--color-text-primary);}
+.kpi-s{font-size:10px;color:var(--color-text-tertiary);margin-top:1px;}
+.two-col{display:grid;grid-template-columns:1fr 300px;gap:10px;margin-bottom:10px;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;}
+.ct{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;}
+.tg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;}
+.tc{aspect-ratio:1;border-radius:var(--border-radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:9px;border:1.5px solid transparent;transition:opacity .12s;}
+.tc:hover{opacity:.75;}
+.tc .tn{font-size:11px;font-weight:500;}
+.s-free{background:#EAF3DE;color:#3B6D11;border-color:#97C459;}
+.s-occ{background:#E6F1FB;color:#185FA5;border-color:#85B7EB;}
+.s-wait{background:#FAEEDA;color:#854F0B;border-color:#EF9F27;}
+.s-bill{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC;}
+.s-comp{background:#FCEBEB;color:#A32D2D;border-color:#F09595;}
+.leg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--color-text-secondary);}
+.ld{width:8px;height:8px;border-radius:2px;}
+.rl{display:flex;flex-direction:column;gap:5px;}
+.ri{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);cursor:pointer;}
+.rb{width:26px;height:26px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.ri-t{font-size:11px;font-weight:500;color:var(--color-text-primary);}
+.ri-s{font-size:10px;color:var(--color-text-secondary);}
+.ri-tm{font-size:10px;color:var(--color-text-tertiary);margin-left:auto;white-space:nowrap;}
+.wl{display:flex;flex-direction:column;gap:4px;}
+.wi{display:flex;align-items:center;gap:8px;padding:5px 0;}
+.wa{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;}
+.wn{font-size:11px;font-weight:500;color:var(--color-text-primary);}
+.wz{font-size:10px;color:var(--color-text-tertiary);}
+.ws{margin-left:auto;text-align:right;}
+.wr{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.wsp{font-size:9px;color:var(--color-text-secondary);}
+.zone-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.zone-col{}
+.zone-label{font-size:10px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase;}
+.zone-cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+.ftabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.ft{padding:4px 9px;border-radius:var(--border-radius-md);font-size:11px;cursor:pointer;border:0.5px solid var(--color-border-tertiary);background:transparent;color:var(--color-text-secondary);}
+.ft.active{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-secondary);font-weight:500;}
+.rfl{display:flex;flex-direction:column;gap:7px;}
+.rfi{padding:10px 12px;border-radius:var(--border-radius-lg);background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:10px;}
+.rtb{padding:2px 7px;border-radius:var(--border-radius-md);font-size:10px;font-weight:500;}
+.rbtn{margin-left:auto;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;font-size:11px;color:var(--color-text-primary);}
+.rbtn:hover{background:var(--color-background-secondary);}
+.wa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wa-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;}
+.wa-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pr{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px;}
+.pr:last-child{border-bottom:none;}
+.pk{color:var(--color-text-secondary);}
+.pv{font-weight:500;color:var(--color-text-primary);}
+.mg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.mi{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:10px 12px;}
+.min{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.mic{font-size:10px;color:var(--color-text-tertiary);}
+.mip{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-top:4px;}
+.mt{display:flex;align-items:center;gap:5px;margin-top:6px;}
+.tgl{width:26px;height:14px;border-radius:7px;border:0.5px solid var(--color-border-secondary);cursor:pointer;display:flex;align-items:center;padding:1px;transition:background .2s;}
+.tgl.on{background:#639922;border-color:#639922;}
+.tgl-d{width:11px;height:11px;border-radius:50%;background:#B4B2A9;transition:transform .2s;}
+.tgl.on .tgl-d{background:#fff;transform:translateX(11px);}
+.sh-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.add-btn{padding:4px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;font-size:11px;color:var(--color-text-primary);}
+.add-btn:hover{background:var(--color-background-secondary);}
+.wfg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;}
+.wfc{padding:6px 4px;border-radius:var(--border-radius-md);text-align:center;font-size:9px;font-weight:500;}
+.wok{background:#EAF3DE;color:#3B6D11;}
+.wwk{background:#FAEEDA;color:#854F0B;}
+.wof{background:#FCEBEB;color:#A32D2D;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.blink{animation:blink 1.8s infinite;}
+</style>
+
+<h2 class="sr-only">Менеджерская панель умного ресторана: 35 столов, 4 зоны, запросы гостей в реальном времени</h2>
+
+<div class="app">
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-name">RestaurantOS</div>
+    <div class="logo-sub">NFC · Панель менеджера</div>
+  </div>
+  <div class="nav" id="nav">
+    <div class="ni active" data-v="dashboard"><span class="ni-icon">▦</span>Главная<span class="nbadge" id="nb">4</span></div>
+    <div class="ni" data-v="tables"><span class="ni-icon">⊞</span>Карта столов</div>
+    <div class="ni" data-v="requests"><span class="ni-icon">▲</span>Запросы<span class="nbadge">4</span></div>
+    <div class="ni" data-v="waiters"><span class="ni-icon">◉</span>Официанты</div>
+    <div class="ni" data-v="menu"><span class="ni-icon">☰</span>Меню</div>
+    <div class="ni" data-v="wifi"><span class="ni-icon">◈</span>Wi-Fi</div>
+  </div>
+  <div class="user-block">
+    <div class="user-name">Азиз Каримов</div>
+    <div class="user-role">Менеджер зала · Смена 1</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <span class="page-title" id="pt">Главная — обзор</span>
+    <span class="clock" id="clk">--:--:--</span>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Занято столов</div><div class="kpi-v">23 <span style="font-size:12px;color:var(--color-text-tertiary)">/35</span></div><div class="kpi-s">Загрузка 66%</div></div>
+        <div class="kpi"><div class="kpi-l">Активные запросы</div><div class="kpi-v" style="color:#BA7517">4</div><div class="kpi-s">2 ждут >3 мин</div></div>
+        <div class="kpi"><div class="kpi-l">Выручка сегодня</div><div class="kpi-v">2.84M</div><div class="kpi-s">UZS · +12% к вчера</div></div>
+        <div class="kpi"><div class="kpi-l">Средний чек</div><div class="kpi-v">123K</div><div class="kpi-s">UZS / стол</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="ct">Карта столов — реального времени</div>
+          <div class="leg">
+            <div class="li"><div class="ld" style="background:#97C459"></div>Свободен</div>
+            <div class="li"><div class="ld" style="background:#85B7EB"></div>Занят</div>
+            <div class="li"><div class="ld" style="background:#EF9F27"></div>Вызов</div>
+            <div class="li"><div class="ld" style="background:#AFA9EC"></div>Счёт</div>
+            <div class="li"><div class="ld" style="background:#F09595"></div>Жалоба</div>
+          </div>
+          <div class="tg" id="mini-map"></div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;gap:0;">
+          <div class="ct">Активные запросы</div>
+          <div class="rl" id="req-list"></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--color-border-tertiary);">
+            <div class="ct">Официанты на смене</div>
+            <div class="wl" id="waiter-mini"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">Выручка по часам (UZS)</div>
+        <div style="position:relative;width:100%;height:140px;">
+          <canvas id="revChart" role="img" aria-label="Почасовая выручка за сегодня">Данные о выручке по часам.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLES -->
+    <div class="view" id="view-tables">
+      <div class="card">
+        <div class="ct" style="margin-bottom:10px;">Карта зала · 35 столов · 4 зоны</div>
+        <div class="leg" style="margin-bottom:12px;">
+          <div class="li"><div class="ld" style="background:#97C459"></div>Свободен</div>
+          <div class="li"><div class="ld" style="background:#85B7EB"></div>Занят</div>
+          <div class="li"><div class="ld" style="background:#EF9F27"></div>Вызов</div>
+          <div class="li"><div class="ld" style="background:#AFA9EC"></div>Счёт</div>
+          <div class="li"><div class="ld" style="background:#F09595"></div>Жалоба</div>
+        </div>
+        <div class="zone-grid" id="zone-map"></div>
+      </div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div class="view" id="view-requests">
+      <div class="ftabs" id="req-tabs">
+        <div class="ft active" data-f="all">Все (4)</div>
+        <div class="ft" data-f="waiter">Вызов (2)</div>
+        <div class="ft" data-f="bill">Счёт (1)</div>
+        <div class="ft" data-f="complaint">Жалоба (1)</div>
+      </div>
+      <div class="rfl" id="req-full"></div>
+    </div>
+
+    <!-- WAITERS -->
+    <div class="view" id="view-waiters">
+      <div class="wa-grid" id="wa-grid"></div>
+    </div>
+
+    <!-- MENU -->
+    <div class="view" id="view-menu">
+      <div class="sh-hdr">
+        <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);">Управление меню</div>
+        <button class="add-btn">+ Добавить блюдо</button>
+      </div>
+      <div class="ftabs">
+        <div class="ft active">Все</div>
+        <div class="ft">Закуски</div>
+        <div class="ft">Горячее</div>
+        <div class="ft">Напитки</div>
+        <div class="ft">Десерты</div>
+      </div>
+      <div class="mg" id="menu-grid"></div>
+    </div>
+
+    <!-- WIFI -->
+    <div class="view" id="view-wifi">
+      <div class="card">
+        <div class="ct">Wi-Fi статус по столам</div>
+        <div class="leg" style="margin-bottom:10px;">
+          <div class="li"><div class="ld" style="background:#97C459"></div>Подключён</div>
+          <div class="li"><div class="ld" style="background:#EF9F27"></div>Слабый сигнал</div>
+          <div class="li"><div class="ld" style="background:#F09595"></div>Недоступен</div>
+        </div>
+        <div class="wfg" id="wifi-grid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const STATUSES = ['free','free','free','occ','occ','occ','occ','occ','wait','bill','comp'];
+const SLABELS = {free:'Свободен',occ:'Занят',wait:'Вызов!',bill:'Счёт',comp:'Жалоба'};
+const SCLASS = {free:'s-free',occ:'s-occ',wait:'s-wait',bill:'s-bill',comp:'s-comp'};
+const zones = ['A','A','A','A','A','A','A','A','A','B','B','B','B','B','B','B','B','B','C','C','C','C','C','C','C','C','C','D','D','D','D','D','D','D','D'];
+const waiters_data = [
+  {name:'Алишер',init:'АЛ',zone:'А (1–9)',rating:'4.8',speed:'2.3 мин',served:18,comp:0,bg:'#B5D4F4',tc:'#185FA5'},
+  {name:'Малика',init:'МА',zone:'Б (10–18)',rating:'4.6',speed:'3.1 мин',served:14,comp:0,bg:'#C0DD97',tc:'#3B6D11'},
+  {name:'Бахром',init:'БА',zone:'В (19–27)',rating:'4.2',speed:'4.5 мин',served:11,comp:1,bg:'#FAC775',tc:'#854F0B'},
+  {name:'Нилуфар',init:'НИ',zone:'Г (28–35)',rating:'4.9',speed:'1.9 мин',served:16,comp:0,bg:'#F4C0D1',tc:'#993556'},
+];
+const requests = [
+  {table:3,type:'waiter',label:'Вызов официанта',waiter:'Алишер',time:'2 мин',bg:'#FAEEDA',tc:'#854F0B'},
+  {table:8,type:'waiter',label:'Вызов официанта',waiter:'Алишер',time:'4 мин',bg:'#FAEEDA',tc:'#854F0B'},
+  {table:15,type:'bill',label:'Запрос счёта',waiter:'Малика',time:'1 мин',bg:'#EEEDFE',tc:'#3C3489'},
+  {table:22,type:'complaint',label:'Жалоба гостя',waiter:'Бахром',time:'5 мин',bg:'#FCEBEB',tc:'#A32D2D'},
+];
+const menuItems = [
+  {name:'Манты',cat:'Горячее',price:'35 000',on:true},
+  {name:'Лагман',cat:'Горячее',price:'28 000',on:true},
+  {name:'Плов',cat:'Горячее',price:'40 000',on:true},
+  {name:'Самса',cat:'Закуски',price:'15 000',on:true},
+  {name:'Шурпа',cat:'Горячее',price:'32 000',on:false},
+  {name:'Нарин',cat:'Горячее',price:'38 000',on:true},
+  {name:'Зелёный чай',cat:'Напитки',price:'8 000',on:true},
+  {name:'Чёрный чай',cat:'Напитки',price:'8 000',on:true},
+  {name:'Пахлава',cat:'Десерты',price:'20 000',on:true},
+];
+const tableStatuses = zones.map((_,i) => {
+  if(i===2) return 'wait'; if(i===7) return 'wait'; if(i===14) return 'bill'; if(i===21) return 'comp';
+  return STATUSES[Math.floor(Math.random()*STATUSES.length)];
+});
+
+setInterval(()=>{ document.getElementById('clk').textContent=new Date().toLocaleTimeString('ru-RU'); },1000);
+document.getElementById('clk').textContent=new Date().toLocaleTimeString('ru-RU');
+
+function renderMiniMap(){
+  document.getElementById('mini-map').innerHTML=tableStatuses.map((s,i)=>`
+    <div class="tc ${SCLASS[s]} ${s==='wait'||s==='comp'?'blink':''}">
+      <span class="tn">${i+1}</span><span style="font-size:8px;opacity:.8;">${s==='wait'?'!':s==='comp'?'!!':''}</span>
+    </div>`).join('');
+}
+
+function renderZoneMap(){
+  const zoneNames=['A','B','C','D'];
+  const zoneWaiters=['Алишер','Малика','Бахром','Нилуфар'];
+  const zoneRanges=['1–9','10–18','19–27','28–35'];
+  document.getElementById('zone-map').innerHTML=zoneNames.map((z,zi)=>{
+    const cells=tableStatuses.map((s,i)=>({s,i:i+1})).filter((_,i)=>zones[i]===z);
+    return `<div class="zone-col">
+      <div class="zone-label">Зона ${z} · ${zoneWaiters[zi]}</div>
+      <div class="zone-cells">${cells.map(({s,i})=>`
+        <div class="tc ${SCLASS[s]} ${s==='wait'||s==='comp'?'blink':''}" style="font-size:9px;">
+          <span style="font-size:11px;font-weight:500;">${i}</span>
+          <span style="font-size:8px;opacity:.75;">${SLABELS[s]}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRequests(){
+  const icons={waiter:'▲',bill:'■',complaint:'!'};
+  document.getElementById('req-list').innerHTML=requests.map(r=>`
+    <div class="ri">
+      <div class="rb" style="background:${r.bg};color:${r.tc};">${icons[r.type]}</div>
+      <div><div class="ri-t">Стол ${r.table} · ${r.waiter}</div><div class="ri-s">${r.label}</div></div>
+      <div class="ri-tm">${r.time}</div>
+    </div>`).join('');
+}
+
+function renderWaiterMini(){
+  document.getElementById('waiter-mini').innerHTML=waiters_data.map(w=>`
+    <div class="wi">
+      <div class="wa" style="background:${w.bg};color:${w.tc};">${w.init}</div>
+      <div><div class="wn">${w.name}</div><div class="wz">Зона ${w.zone}</div></div>
+      <div class="ws"><div class="wr">★ ${w.rating}</div><div class="wsp">${w.speed}</div></div>
+    </div>`).join('');
+}
+
+function renderFullRequests(){
+  const typeColors={waiter:'background:#FAEEDA;color:#854F0B;',bill:'background:#EEEDFE;color:#3C3489;',complaint:'background:#FCEBEB;color:#A32D2D;'};
+  document.getElementById('req-full').innerHTML=requests.map((r,i)=>`
+    <div class="rfi" id="rfi-${i}">
+      <div style="width:32px;height:32px;border-radius:50%;background:${r.bg};color:${r.tc};display:flex;align-items:center;justify-content:center;font-weight:500;font-size:13px;flex-shrink:0;">${r.table}</div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);">Стол ${r.table}</div>
+        <div style="font-size:10px;color:var(--color-text-secondary);">Официант: ${r.waiter} · ${r.time} назад</div>
+      </div>
+      <span class="rtb" style="${typeColors[r.type]}">${r.label}</span>
+      <button class="rbtn" onclick="(function(el,btn){el.style.opacity='.4';btn.textContent='Принято ✓';btn.disabled=true;})(document.getElementById('rfi-${i}'),this)">Принять</button>
+    </div>`).join('');
+}
+
+function renderWaiterAnalytics(){
+  document.getElementById('wa-grid').innerHTML=waiters_data.map(w=>`
+    <div class="wa-card">
+      <div class="wa-hdr">
+        <div class="wa" style="background:${w.bg};color:${w.tc};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${w.init}</div>
+        <div><div style="font-size:13px;font-weight:500;color:var(--color-text-primary);">${w.name}</div><div style="font-size:10px;color:var(--color-text-tertiary);">Зона ${w.zone}</div></div>
+        <div style="margin-left:auto;font-size:16px;font-weight:500;color:var(--color-text-primary);">★ ${w.rating}</div>
+      </div>
+      <div class="pr"><span class="pk">Столов обслужено</span><span class="pv">${w.served}</span></div>
+      <div class="pr"><span class="pk">Время отклика</span><span class="pv">${w.speed}</span></div>
+      <div class="pr"><span class="pk">Жалобы</span><span class="pv" style="color:${w.comp>0?'#A32D2D':'#3B6D11'};">${w.comp}</span></div>
+      <div class="pr"><span class="pk">Статус</span><span class="pv" style="color:#3B6D11;">На смене</span></div>
+    </div>`).join('');
+}
+
+function renderMenu(){
+  document.getElementById('menu-grid').innerHTML=menuItems.map((m,i)=>`
+    <div class="mi">
+      <div class="min">${m.name}</div>
+      <div class="mic">${m.cat}</div>
+      <div class="mip">${m.price} UZS</div>
+      <div class="mt">
+        <div class="tgl ${m.on?'on':''}" onclick="toggleM(${i},this)"><div class="tgl-d"></div></div>
+        <span style="font-size:10px;color:var(--color-text-secondary);" id="ml-${i}">${m.on?'В наличии':'Нет'}</span>
+      </div>
+    </div>`).join('');
+}
+window.toggleM=function(i,el){
+  menuItems[i].on=!menuItems[i].on;
+  el.classList.toggle('on');
+  document.getElementById('ml-'+i).textContent=menuItems[i].on?'В наличии':'Нет';
+};
+
+function renderWifi(){
+  const ws=tableStatuses.map(()=>{ const r=Math.random(); return r>.12?'ok':r>.04?'wk':'of'; });
+  ws[4]='wk'; ws[19]='of';
+  document.getElementById('wifi-grid').innerHTML=ws.map((s,i)=>`
+    <div class="wfc ${s==='ok'?'wok':s==='wk'?'wwk':'wof'}">Стол ${i+1}</div>`).join('');
+}
+
+function renderChart(){
+  new Chart(document.getElementById('revChart'),{
+    type:'bar',
+    data:{
+      labels:['9','10','11','12','13','14','15','16','17','18','19','20','21'].map(h=>h+':00'),
+      datasets:[{data:[42,76,118,305,447,518,372,285,335,475,552,418,198].map(v=>v*1000),backgroundColor:'#B5D4F4',borderColor:'#378ADD',borderWidth:1,borderRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      x:{grid:{display:false},ticks:{font:{size:9},color:'#888780'}},
+      y:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:9},color:'#888780',callback:v=>(v/1000000).toFixed(1)+'M'}}
+    }}
+  });
+}
+
+const titles={dashboard:'Главная — обзор',tables:'Карта столов',requests:'Запросы гостей',waiters:'Аналитика официантов',menu:'Управление меню',wifi:'Wi-Fi статус'};
+document.getElementById('nav').addEventListener('click',e=>{
+  const item=e.target.closest('.ni');
+  if(!item) return;
+  const v=item.dataset.v;
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  item.classList.add('active');
+  document.querySelectorAll('.view').forEach(vw=>vw.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('pt').textContent=titles[v]||'';
+});
+document.querySelectorAll('.ftabs').forEach(tabs=>{
+  tabs.addEventListener('click',e=>{
+    const t=e.target.closest('.ft');
+    if(!t) return;
+    tabs.querySelectorAll('.ft').forEach(f=>f.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+
+renderMiniMap(); renderZoneMap(); renderRequests(); renderWaiterMini();
+renderFullRequests(); renderWaiterAnalytics(); renderMenu(); renderWifi(); renderChart();
+</script>

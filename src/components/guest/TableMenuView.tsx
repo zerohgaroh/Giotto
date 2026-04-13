@@ -13,23 +13,13 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { useCart } from "@/context/cart-context";
-import { DISHES, MENU_CATEGORIES } from "@/lib/menu-data";
+import { useRestaurantData } from "@/lib/restaurant-store";
 import { tableLabelFromId } from "@/lib/table-label";
 import type { Dish, MenuCategoryId } from "@/lib/types";
 import { formatPriceUZS } from "@/lib/format";
 import { DishSheet } from "./DishSheet";
 
 type Props = { tableId: string };
-
-const CATEGORY_IDS = new Set<MenuCategoryId>(
-  MENU_CATEGORIES.map((c) => c.id),
-);
-
-function categoryFromSearch(raw: string | null): MenuCategoryId | null {
-  if (!raw) return null;
-  const id = raw as MenuCategoryId;
-  return CATEGORY_IDS.has(id) ? id : null;
-}
 
 function badgeClasses(dish: Dish) {
   switch (dish.badgeTone) {
@@ -47,20 +37,28 @@ function badgeClasses(dish: Dish) {
 
 export function TableMenuView({ tableId }: Props) {
   const search = useSearchParams();
+  const { data } = useRestaurantData();
+  const { categories, dishes, profile } = data;
   const base = `/table/${tableId}`;
   const label = tableLabelFromId(tableId);
   const [cat, setCat] = useState<MenuCategoryId>("all");
 
   useEffect(() => {
-    const next = categoryFromSearch(search.get("cat"));
-    if (next) setCat(next);
-  }, [search]);
+    const raw = search.get("cat");
+    if (!raw) return;
+    if (raw === "all" || categories.some((category) => category.id === raw)) {
+      setCat(raw);
+    }
+  }, [categories, search]);
   const [sheet, setSheet] = useState<Dish | null>(null);
   const { lines, addDish, setQty, totalQty } = useCart();
 
   const visible = useMemo(
-    () => DISHES.filter((d) => cat === "all" || d.category === cat),
-    [cat],
+    () =>
+      dishes.filter(
+        (dish) => dish.available !== false && (cat === "all" || dish.category === cat),
+      ),
+    [cat, dishes],
   );
 
   const qtyFor = (id: string) =>
@@ -85,13 +83,13 @@ export function TableMenuView({ tableId }: Props) {
               Стол {label}
             </p>
             <h1 className="truncate font-serif text-lg font-semibold text-giotto-navy-deep">
-              Меню
+              {profile.name} · Меню
             </h1>
           </div>
           <div className="h-11 w-11 shrink-0" aria-hidden />
         </div>
         <div className="flex gap-2 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {MENU_CATEGORIES.map((c) => {
+          {[{ id: "all", labelRu: "Все", icon: "✨" }, ...categories].map((c) => {
             const on = c.id === cat;
             return (
               <button
@@ -105,6 +103,7 @@ export function TableMenuView({ tableId }: Props) {
                     : "border-giotto-line bg-white/90 text-giotto-muted hover:border-giotto-navy-soft hover:text-giotto-navy",
                 )}
               >
+                {"icon" in c && c.icon ? <span className="mr-1.5">{c.icon}</span> : null}
                 {c.labelRu}
               </button>
             );
@@ -113,6 +112,9 @@ export function TableMenuView({ tableId }: Props) {
       </header>
 
       <main className="mx-auto w-full max-w-guest flex-1 px-3 pt-4">
+        <div className="mb-3 rounded-giotto-lg bg-white/75 px-3 py-2 text-xs text-giotto-muted">
+          {profile.description}
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
           {visible.map((dish) => {
             const q = qtyFor(dish.id);
@@ -209,6 +211,11 @@ export function TableMenuView({ tableId }: Props) {
             );
           })}
         </div>
+        {visible.length === 0 ? (
+          <div className="rounded-giotto-lg border border-giotto-line bg-white px-4 py-8 text-center text-sm text-giotto-muted">
+            В этой категории пока нет доступных блюд.
+          </div>
+        ) : null}
       </main>
 
       <DishSheet

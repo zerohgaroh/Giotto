@@ -1,1 +1,7 @@
-{}
+{
+  "/manager/page": "app/manager/page.js",
+  "/manager/logout/page": "app/manager/logout/page.js",
+  "/login/page": "app/login/page.js",
+  "/table/[tableId]/page": "app/table/[tableId]/page.js",
+  "/table/[tableId]/waiter/page": "app/table/[tableId]/waiter/page.js"
+}

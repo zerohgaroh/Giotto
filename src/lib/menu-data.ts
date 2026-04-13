@@ -1,14 +1,22 @@
-import type { Dish, MenuCategoryId } from "./types";
+import type { Dish, MenuCategory, RestaurantProfile } from "./types";
 
-export const MENU_CATEGORIES: {
-  id: MenuCategoryId;
-  labelRu: string;
-}[] = [
-  { id: "all", labelRu: "Все" },
-  { id: "antipasti", labelRu: "Закуски" },
-  { id: "primi", labelRu: "Паста" },
-  { id: "dolci", labelRu: "Десерты" },
-  { id: "bevande", labelRu: "Напитки" },
+export const DEFAULT_RESTAURANT_PROFILE: RestaurantProfile = {
+  name: "Giotto",
+  subtitle: "Ristorante · Table Service",
+  description:
+    "Меню и сервис за столом. Всё открывается сразу после касания NFC-карточки.",
+  logo: "/brand/giotto-logo.png",
+  banner:
+    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1600&q=85",
+  wifiName: "Giotto-Guest",
+  wifiPassword: "buonappetito",
+};
+
+export const MENU_CATEGORIES: MenuCategory[] = [
+  { id: "antipasti", labelRu: "Закуски", icon: "🥗" },
+  { id: "primi", labelRu: "Паста", icon: "🍝" },
+  { id: "dolci", labelRu: "Десерты", icon: "🍰" },
+  { id: "bevande", labelRu: "Напитки", icon: "🍷" },
 ];
 
 export const DISHES: Dish[] = [
@@ -23,6 +31,7 @@ export const DISHES: Dish[] = [
     energyKcal: 240,
     badgeLabel: "Antipasto",
     badgeTone: "navy",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=800&q=85",
   },
@@ -38,6 +47,7 @@ export const DISHES: Dish[] = [
     badgeLabel: "Шеф рекомендует",
     badgeTone: "gold",
     highlight: true,
+    available: true,
     image:
       "https://images.unsplash.com/photo-1760023570385-ee484f7076b3?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&dl=felix-ramirez-Yw6fO5vewuw-unsplash.jpg&w=1200",
   },
@@ -53,6 +63,7 @@ export const DISHES: Dish[] = [
     badgeLabel: "Signature",
     badgeTone: "gold",
     highlight: true,
+    available: true,
     image:
       "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=85",
   },
@@ -67,6 +78,7 @@ export const DISHES: Dish[] = [
     energyKcal: 480,
     badgeLabel: "Классика",
     badgeTone: "sage",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&dl=rob-wicks-qrleIV6KkfI-unsplash.jpg&w=1200",
   },
@@ -81,6 +93,7 @@ export const DISHES: Dish[] = [
     energyKcal: 350,
     badgeLabel: "Dolce",
     badgeTone: "blush",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1560969617-715be4e54d97?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&dl=kyndall-ramirez-vyYN2TwjW9M-unsplash.jpg&w=1200",
   },
@@ -95,6 +108,7 @@ export const DISHES: Dish[] = [
     energyKcal: 290,
     badgeLabel: "Нежный вкус",
     badgeTone: "sage",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=85",
   },
@@ -109,6 +123,7 @@ export const DISHES: Dish[] = [
     energyKcal: 8,
     badgeLabel: "Italia",
     badgeTone: "navy",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=85",
   },
@@ -123,11 +138,12 @@ export const DISHES: Dish[] = [
     energyKcal: 190,
     badgeLabel: "Aperitivo",
     badgeTone: "blush",
+    available: true,
     image:
       "https://images.unsplash.com/photo-1560512823-829485b8bf24?w=800&q=85",
   },
 ];
 
-export function getDishById(id: string) {
-  return DISHES.find((d) => d.id === id);
+export function getDishById(id: string, dishes: Dish[] = DISHES) {
+  return dishes.find((d) => d.id === id);
 }

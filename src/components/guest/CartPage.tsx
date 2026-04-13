@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Minus, Plus } from "lucide-react";
 import { useCart } from "@/context/cart-context";
-import { getDishById } from "@/lib/menu-data";
 import { formatPriceUZS } from "@/lib/format";
+import { getDishByIdFromData, useRestaurantData } from "@/lib/restaurant-store";
 
 type Props = { tableId: string };
 
@@ -15,6 +15,7 @@ export function CartPage({ tableId }: Props) {
   const menu = `${base}/menu`;
   const router = useRouter();
   const { lines, setQty, totalSum, clear } = useCart();
+  const { data } = useRestaurantData();
 
   const checkout = () => {
     if (lines.length === 0) return;
@@ -74,7 +75,7 @@ export function CartPage({ tableId }: Props) {
         ) : (
           <ul className="flex flex-col gap-3">
             {lines.map((line) => {
-              const d = getDishById(line.dishId);
+              const d = getDishByIdFromData(data.dishes, line.dishId);
               if (!d) return null;
               return (
                 <li

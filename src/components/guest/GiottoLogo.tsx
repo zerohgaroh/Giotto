@@ -7,12 +7,16 @@ type Props = {
   size?: number;
   className?: string;
   priority?: boolean;
+  src?: string;
+  alt?: string;
 };
 
 export function GiottoLogo({
   size = 100,
   className,
   priority = false,
+  src = "/brand/giotto-logo.png",
+  alt = "Giotto",
 }: Props) {
   return (
     <span
@@ -23,8 +27,8 @@ export function GiottoLogo({
       style={{ width: size, height: size }}
     >
       <Image
-        src="/brand/giotto-logo.png"
-        alt="Giotto"
+        src={src}
+        alt={alt}
         width={size}
         height={size}
         className="object-contain"

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getDishById } from "@/lib/menu-data";
+import { getDishByIdFromData, useRestaurantData } from "@/lib/restaurant-store";
 
 export type CartLine = {
   lineId: string;
@@ -27,12 +27,9 @@ type CartValue = {
 
 const CartContext = createContext<CartValue | null>(null);
 
-function priceForDish(dishId: string) {
-  return getDishById(dishId)?.price ?? 0;
-}
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const { data } = useRestaurantData();
 
   const addDish = useCallback((dishId: string) => {
     setLines((prev) => {
@@ -63,10 +60,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     let s = 0;
     for (const l of lines) {
       q += l.qty;
-      s += priceForDish(l.dishId) * l.qty;
+      s += (getDishByIdFromData(data.dishes, l.dishId)?.price ?? 0) * l.qty;
     }
     return { totalQty: q, totalSum: s };
-  }, [lines]);
+  }, [data.dishes, lines]);
 
   const value = useMemo(
     () => ({ lines, totalQty, totalSum, addDish, setQty, clear }),
