@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import "./fallback.css";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -38,9 +39,6 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <head>
-        <link rel="stylesheet" href="/giotto-fallback.css" />
-      </head>
       <body className={`${manrope.variable} ${cormorant.variable}`}>
         {children}
       </body>
