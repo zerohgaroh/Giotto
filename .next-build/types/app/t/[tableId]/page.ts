@@ -1,4 +1,4 @@
-// File: /Users/egouzbekistan/Desktop/Giotto/src/app/t/[tableId]/page.tsx
+// File: /Users/premium/Desktop/Giotto/src/app/t/[tableId]/page.tsx
 import * as entry from '../../../../../src/app/t/[tableId]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
