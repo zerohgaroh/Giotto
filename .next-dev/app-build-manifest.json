@@ -11,6 +11,16 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/restaurants/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/restaurants/page.js"
+    ],
+    "/restaurants/[restaurantId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/restaurants/[restaurantId]/page.js"
+    ],
     "/table/[tableId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -21,25 +31,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/table/[tableId]/layout.js"
     ],
-    "/table/[tableId]/menu/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/table/[tableId]/menu/page.js"
-    ],
     "/table/[tableId]/waiter/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/table/[tableId]/waiter/page.js"
-    ],
-    "/table/[tableId]/complaint/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/table/[tableId]/complaint/page.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

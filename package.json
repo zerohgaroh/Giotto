@@ -8,6 +8,7 @@
     "dev": "NEXT_DIST_DIR=.next-dev next dev -p 3000",
     "dev:fresh": "npm run clean && NEXT_DIST_DIR=.next-dev next dev -p 3000",
     "dev:network": "NEXT_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",
+    "dev:network:3002": "NEXT_DIST_DIR=.next-dev-3002 next dev -H 0.0.0.0 -p 3002",
     "build": "NEXT_DIST_DIR=.next-build next build",
     "start": "NEXT_DIST_DIR=.next-build next start -p 3000",
     "lint": "next lint"

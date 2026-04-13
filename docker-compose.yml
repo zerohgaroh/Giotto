@@ -1,0 +1,36 @@
+services:
+  giotto-web:
+    container_name: giotto-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - giotto-node-modules:/app/node_modules
+    restart: unless-stopped
+
+  giotto-web-3002:
+    container_name: giotto-web-3002
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run dev:network:3002
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - giotto-node-modules:/app/node_modules
+    restart: unless-stopped
+
+volumes:
+  giotto-node-modules:
