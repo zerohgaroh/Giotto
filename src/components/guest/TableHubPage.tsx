@@ -1,12 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
   Bell,
   ClipboardList,
   Menu,
-  MessageSquareWarning,
   Wifi,
   X,
 } from "lucide-react";
@@ -16,27 +16,31 @@ import { GiottoLogo } from "./GiottoLogo";
 
 type Props = { tableId: string };
 
+function escapeWifiQrValue(value: string) {
+  return value.replace(/([\\;,:"])/g, "\\$1");
+}
+
 export function TableHubPage({ tableId }: Props) {
   const { data } = useRestaurantData();
   const { profile } = data;
   const label = tableLabelFromId(tableId);
   const base = `/table/${tableId}`;
   const [wifiOpen, setWifiOpen] = useState(false);
-  const [wifiCopied, setWifiCopied] = useState<"idle" | "password" | "all">("idle");
+  const [wifiCopied, setWifiCopied] = useState<"idle" | "password">("idle");
   const wifiName = profile.wifiName;
   const wifiPassword = profile.wifiPassword;
+  const wifiQrPayload = `WIFI:T:WPA;S:${escapeWifiQrValue(wifiName)};P:${escapeWifiQrValue(wifiPassword)};H:false;;`;
+  const wifiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=460x460&margin=12&qzone=2&color=10-31-74&bgcolor=252-250-246&data=${encodeURIComponent(
+    wifiQrPayload,
+  )}`;
 
   const btn =
-    "flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-[1.55rem] border-2 border-giotto-navy bg-white px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.06em] text-giotto-navy shadow-lift transition active:scale-[0.99] hover:bg-giotto-navy hover:text-white";
+    "flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:bg-giotto-navy-deep hover:border-giotto-navy-deep";
 
-  const copyWifi = async (mode: "password" | "all") => {
-    const text =
-      mode === "password"
-        ? wifiPassword
-        : `Сеть: ${wifiName}\nПароль: ${wifiPassword}`;
+  const copyWifiPassword = async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      setWifiCopied(mode);
+      await navigator.clipboard.writeText(wifiPassword);
+      setWifiCopied("password");
       window.setTimeout(() => setWifiCopied("idle"), 1800);
     } catch {
       setWifiCopied("idle");
@@ -57,22 +61,36 @@ export function TableHubPage({ tableId }: Props) {
         </p>
       </header>
 
-      <section className="relative mt-8 overflow-hidden rounded-[2.3rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.78))] px-6 pb-8 pt-8 shadow-card backdrop-blur-md">
-        {profile.banner ? (
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `url("${profile.banner}")`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
+      <section className="relative mt-8 overflow-hidden rounded-[2.25rem] border border-[#d8d1c3] bg-[#fcfaf6] px-6 pb-8 pt-8 shadow-[0_12px_30px_rgba(8,29,54,0.07)]">
+        <svg
+          aria-hidden
+          viewBox="0 0 420 620"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-60"
+        >
+          <path
+            d="M-40 160 C 70 80, 170 245, 300 165 C 355 130, 410 145, 460 165"
+            fill="none"
+            stroke="rgba(10,31,74,0.13)"
+            strokeWidth="2"
           />
-        ) : null}
-        <div className="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.18),transparent_72%)]" />
-        <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-giotto-gold/40 to-transparent" />
+          <path
+            d="M-30 430 C 80 360, 185 520, 305 450 C 350 425, 395 430, 455 448"
+            fill="none"
+            stroke="rgba(10,31,74,0.12)"
+            strokeWidth="2"
+          />
+          <path
+            d="M-25 530 C 95 468, 185 620, 320 565 C 372 544, 420 550, 465 560"
+            fill="none"
+            stroke="rgba(184,146,74,0.16)"
+            strokeWidth="1.8"
+          />
+        </svg>
+        <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.16),transparent_72%)]" />
 
         <div className="relative flex flex-col items-center text-center">
-          <div className="rounded-full bg-white/85 p-2.5 shadow-[0_18px_38px_rgba(8,29,54,0.09)]">
+          <div className="rounded-full bg-white p-2.5 shadow-[0_18px_38px_rgba(8,29,54,0.09)]">
             <GiottoLogo
               size={118}
               priority
@@ -81,13 +99,13 @@ export function TableHubPage({ tableId }: Props) {
               className="ring-giotto-gold/20 ring-offset-0"
             />
           </div>
-          <h1 className="mt-6 font-serif text-[3.1rem] font-semibold uppercase leading-none tracking-[0.08em] text-giotto-navy-deep">
+          <h1 className="mt-6 font-serif text-[3rem] font-semibold uppercase leading-none tracking-[0.04em] text-giotto-navy-deep">
             {profile.name}
           </h1>
-          <p className="mt-2 max-w-xs text-[13px] uppercase tracking-[0.3em] text-giotto-muted">
+          <p className="mt-2 max-w-xs text-[12px] uppercase tracking-[0.24em] text-giotto-muted">
             {profile.subtitle}
           </p>
-          <p className="mt-5 max-w-xs text-[14px] leading-relaxed text-giotto-muted">
+          <p className="mt-5 max-w-xs text-[14px] leading-relaxed text-giotto-muted/95">
             {profile.description}
           </p>
         </div>
@@ -105,10 +123,6 @@ export function TableHubPage({ tableId }: Props) {
         <Link href={`${base}/waiter`} className={btn}>
           <Bell className="h-5 w-5 shrink-0" strokeWidth={1.75} />
           Позвать официанта
-        </Link>
-        <Link href={`${base}/complaint`} className={btn}>
-          <MessageSquareWarning className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-          Жалоба
         </Link>
       </nav>
 
@@ -159,25 +173,30 @@ export function TableHubPage({ tableId }: Props) {
             <p className="mt-1 font-sans text-sm text-giotto-muted">
               Пароль: <span className="font-medium text-giotto-ink">{wifiPassword}</span>
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-giotto-muted">
-              Автоподключение из браузера обычно запрещено системой. Поэтому здесь можно
-              быстро скопировать пароль или все данные сети и вставить их в настройках
-              Wi‑Fi.
-            </p>
+            <div className="mt-4 flex w-full flex-col items-center rounded-[1.2rem] border border-[#d8cfbf] bg-[linear-gradient(180deg,#fdfbf7_0%,#f6f1e7_100%)] px-4 py-4">
+              <span className="rounded-full border border-giotto-navy/20 bg-white px-3 py-1 font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-giotto-navy">
+                Giotto Wi‑Fi
+              </span>
+              <div className="mt-3 rounded-[1rem] border-2 border-giotto-navy bg-white p-2 shadow-[0_10px_22px_rgba(8,29,54,0.12)]">
+                <Image
+                  src={wifiQrUrl}
+                  alt={`QR-код Wi‑Fi сети ${wifiName}`}
+                  width={240}
+                  height={240}
+                  className="h-60 w-60 rounded-[0.7rem] bg-[#fcfaf6]"
+                />
+              </div>
+              <p className="mt-3 text-center text-[13px] leading-relaxed text-giotto-muted">
+                Отсканируйте QR-код камерой телефона для быстрого подключения к сети.
+              </p>
+            </div>
             <div className="mt-5 flex flex-col gap-3">
               <button
                 type="button"
-                onClick={() => copyWifi("password")}
-                className="w-full rounded-giotto-lg border border-giotto-line bg-white py-3.5 font-sans text-[14px] font-medium text-giotto-navy-deep transition hover:border-giotto-navy hover:bg-giotto-paper"
+                onClick={copyWifiPassword}
+                className="w-full rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[14px] font-medium text-white transition hover:bg-giotto-navy-deep"
               >
                 {wifiCopied === "password" ? "Пароль скопирован" : "Скопировать пароль"}
-              </button>
-              <button
-                type="button"
-                onClick={() => copyWifi("all")}
-                className="w-full rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[15px] font-medium text-white transition hover:bg-giotto-navy-deep"
-              >
-                {wifiCopied === "all" ? "Данные скопированы" : "Скопировать данные Wi‑Fi"}
               </button>
             </div>
             <button

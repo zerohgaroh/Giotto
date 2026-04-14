@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BellRing, Menu } from "lucide-react";
+import { BellRing } from "lucide-react";
 import { tableLabelFromId } from "@/lib/table-label";
 
 type Props = { tableId: string };
@@ -27,8 +27,39 @@ export function WaiterTimerPage({ tableId }: Props) {
   const label = tableLabelFromId(tableId);
   const base = `/table/${tableId}`;
   const actionLabel = isBill ? "Принести счёт" : "Позвать официанта";
+  const timerStorageKey = `giotto:waiter:${tableId}:${isBill ? "bill" : "waiter"}`;
   const [requested, setRequested] = useState(false);
   const [remaining, setRemaining] = useState(WAIT_SEC);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(timerStorageKey);
+      if (!raw) {
+        setRequested(false);
+        setRemaining(WAIT_SEC);
+        return;
+      }
+      const expiresAt = Number(raw);
+      if (!Number.isFinite(expiresAt)) {
+        window.localStorage.removeItem(timerStorageKey);
+        setRequested(false);
+        setRemaining(WAIT_SEC);
+        return;
+      }
+      const secondsLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      if (secondsLeft > 0) {
+        setRequested(true);
+        setRemaining(secondsLeft);
+      } else {
+        window.localStorage.removeItem(timerStorageKey);
+        setRequested(false);
+        setRemaining(WAIT_SEC);
+      }
+    } catch {
+      setRequested(false);
+      setRemaining(WAIT_SEC);
+    }
+  }, [timerStorageKey]);
 
   useEffect(() => {
     if (!requested || remaining <= 0) return;
@@ -38,6 +69,15 @@ export function WaiterTimerPage({ tableId }: Props) {
     return () => window.clearTimeout(id);
   }, [requested, remaining]);
 
+  useEffect(() => {
+    if (!requested || remaining > 0) return;
+    try {
+      window.localStorage.removeItem(timerStorageKey);
+    } catch {
+      // ignore storage failures
+    }
+  }, [requested, remaining, timerStorageKey]);
+
   const progress = useMemo(() => remaining / WAIT_SEC, [remaining]);
 
   const dashOffset = CIRC * (1 - progress);
@@ -45,9 +85,15 @@ export function WaiterTimerPage({ tableId }: Props) {
   const ringSize = "h-[min(68vmin,15rem)] w-[min(68vmin,15rem)]";
 
   const sendRequest = useCallback(() => {
+    const expiresAt = Date.now() + WAIT_SEC * 1000;
     setRequested(true);
     setRemaining(WAIT_SEC);
-  }, []);
+    try {
+      window.localStorage.setItem(timerStorageKey, String(expiresAt));
+    } catch {
+      // ignore storage failures
+    }
+  }, [timerStorageKey]);
 
   return (
     <div
@@ -173,7 +219,7 @@ export function WaiterTimerPage({ tableId }: Props) {
           type="button"
           onClick={sendRequest}
           disabled={requested && !canRecall}
-          className="min-h-[3.5rem] w-full rounded-[1.45rem] border-2 border-giotto-navy bg-white font-sans text-[12px] font-bold uppercase tracking-[0.1em] text-giotto-navy shadow-lift transition hover:bg-giotto-navy hover:text-white active:scale-[0.99] motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-[#d9dee6] disabled:bg-[#eef2f6] disabled:text-[#8a96aa] disabled:shadow-none disabled:hover:bg-[#eef2f6] disabled:hover:text-[#8a96aa]"
+          className="min-h-[3.5rem] w-full rounded-[1.45rem] border-2 border-giotto-navy bg-giotto-navy font-sans text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-lift transition hover:bg-giotto-navy-deep active:scale-[0.99] motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-[#a7b2c8] disabled:bg-[#a7b2c8] disabled:text-white/80 disabled:shadow-none disabled:hover:bg-[#a7b2c8]"
         >
           {actionLabel}
         </button>
@@ -182,13 +228,6 @@ export function WaiterTimerPage({ tableId }: Props) {
           className="flex min-h-[3.2rem] w-full items-center justify-center rounded-[1.35rem] border border-giotto-line bg-white/92 font-sans text-[14px] font-medium text-giotto-navy-deep backdrop-blur-sm transition hover:border-giotto-navy"
         >
           На экран стола
-        </Link>
-        <Link
-          href={`${base}/menu`}
-          className="flex min-h-[3.2rem] w-full items-center justify-center gap-2 rounded-[1.35rem] border border-giotto-line/70 bg-white/75 text-center font-sans text-[14px] font-medium text-giotto-muted transition hover:border-giotto-navy hover:text-giotto-navy"
-        >
-          <Menu className="h-4 w-4" strokeWidth={1.8} />
-          В меню
         </Link>
       </div>
     </div>

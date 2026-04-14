@@ -21,20 +21,6 @@ import { DishSheet } from "./DishSheet";
 
 type Props = { tableId: string };
 
-function badgeClasses(dish: Dish) {
-  switch (dish.badgeTone) {
-    case "gold":
-      return "bg-[#fff2d6] text-[#8a6929]";
-    case "sage":
-      return "bg-[#edf4ee] text-[#40624c]";
-    case "blush":
-      return "bg-[#f8eae4] text-[#92584b]";
-    case "navy":
-    default:
-      return "bg-[#edf2fb] text-giotto-navy-deep";
-  }
-}
-
 export function TableMenuView({ tableId }: Props) {
   const search = useSearchParams();
   const { data } = useRestaurantData();
@@ -89,7 +75,7 @@ export function TableMenuView({ tableId }: Props) {
           <div className="h-11 w-11 shrink-0" aria-hidden />
         </div>
         <div className="flex gap-2 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {[{ id: "all", labelRu: "Все", icon: "✨" }, ...categories].map((c) => {
+          {[{ id: "all", labelRu: "Все" }, ...categories].map((c) => {
             const on = c.id === cat;
             return (
               <button
@@ -103,7 +89,6 @@ export function TableMenuView({ tableId }: Props) {
                     : "border-giotto-line bg-white/90 text-giotto-muted hover:border-giotto-navy-soft hover:text-giotto-navy",
                 )}
               >
-                {"icon" in c && c.icon ? <span className="mr-1.5">{c.icon}</span> : null}
                 {c.labelRu}
               </button>
             );
@@ -112,23 +97,20 @@ export function TableMenuView({ tableId }: Props) {
       </header>
 
       <main className="mx-auto w-full max-w-guest flex-1 px-3 pt-4">
-        <div className="mb-3 rounded-giotto-lg bg-white/75 px-3 py-2 text-xs text-giotto-muted">
-          {profile.description}
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           {visible.map((dish) => {
             const q = qtyFor(dish.id);
             return (
               <article
                 key={dish.id}
-                className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-[#ece5d8] bg-white shadow-[0_10px_28px_rgba(8,29,54,0.08)] ring-0 transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card"
+                className="group flex flex-col overflow-hidden rounded-[1.35rem] border border-[#ece5d8] bg-white shadow-[0_8px_22px_rgba(8,29,54,0.08)] ring-0 transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card"
               >
                 <button
                   type="button"
                   onClick={() => setSheet(dish)}
                   className="text-left"
                 >
-                  <div className="relative aspect-[0.95] w-full overflow-hidden bg-giotto-line">
+                  <div className="relative aspect-[1.12] w-full overflow-hidden bg-giotto-line">
                     <Image
                       src={dish.image}
                       alt={dish.nameRu}
@@ -136,43 +118,27 @@ export function TableMenuView({ tableId }: Props) {
                       className="object-cover transition duration-500 motion-reduce:transition-none group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
                       sizes="(max-width: 480px) 50vw, 240px"
                     />
-                    {dish.badgeLabel ? (
-                      <span
-                        className={clsx(
-                          "absolute left-3 top-3 rounded-[0.8rem] px-3 py-1 font-sans text-[10px] font-semibold tracking-[0.02em] shadow-[0_8px_18px_rgba(8,29,54,0.08)]",
-                          badgeClasses(dish),
-                        )}
-                      >
-                        {dish.badgeLabel}
-                      </span>
-                    ) : null}
-                    {q > 0 ? (
-                      <span className="absolute bottom-3 right-3 flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-giotto-navy px-2 font-sans text-xs font-bold text-white shadow-[0_8px_18px_rgba(8,29,54,0.18)]">
-                        {q}
-                      </span>
-                    ) : null}
                   </div>
-                  <div className="px-3.5 pb-3.5 pt-3">
-                    <h2 className="line-clamp-2 font-sans text-[1.02rem] font-semibold leading-[1.2] text-giotto-ink">
+                  <div className="flex min-h-[5.7rem] flex-col px-3 pb-2.5 pt-2.5">
+                    <h2 className="line-clamp-2 min-h-[2.65rem] font-sans text-[1.06rem] font-semibold leading-[1.24] tracking-[-0.01em] text-giotto-ink">
                       {dish.nameRu}
                     </h2>
-                    <p className="mt-1 line-clamp-1 font-serif text-[13px] italic text-giotto-muted">
-                      {dish.nameIt}
-                    </p>
-                    <p className="mt-3 text-[12px] text-giotto-muted">
-                      {dish.portion} · {dish.energyKcal} ккал
-                    </p>
-                    <p className="mt-3 font-sans text-[1.05rem] font-bold text-giotto-navy-deep">
-                      {formatPriceUZS(dish.price)}
-                    </p>
+                    <div className="mt-auto">
+                      <p className="text-[10px] uppercase tracking-[0.11em] text-giotto-muted">
+                        Цена
+                      </p>
+                      <p className="mt-0.5 font-sans text-[0.9rem] font-semibold text-giotto-navy">
+                        {formatPriceUZS(dish.price)}
+                      </p>
+                    </div>
                   </div>
                 </button>
-                <div className="mt-auto px-3.5 pb-3.5">
+                <div className="mt-auto px-3 pb-3">
                   {q === 0 ? (
                     <button
                       type="button"
                       onClick={() => addDish(dish.id)}
-                      className="flex min-h-[3.35rem] w-full items-center justify-center gap-1.5 rounded-[1rem] bg-giotto-navy text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)] transition hover:bg-giotto-navy-deep active:scale-95"
+                      className="flex min-h-[2.8rem] w-full items-center justify-center gap-1.5 rounded-[0.9rem] bg-giotto-navy text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)] transition hover:bg-giotto-navy-deep active:scale-95"
                       aria-label="Добавить"
                     >
                       <Plus className="h-4.5 w-4.5" strokeWidth={2.2} />
@@ -181,10 +147,10 @@ export function TableMenuView({ tableId }: Props) {
                       </span>
                     </button>
                   ) : (
-                    <div className="flex min-h-[3.35rem] w-full items-center justify-between rounded-[1rem] bg-giotto-navy px-2 py-1 text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)]">
+                    <div className="flex min-h-[2.8rem] w-full items-center justify-between rounded-[0.9rem] bg-giotto-navy px-1.5 py-1 text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)]">
                       <button
                         type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
+                        className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
                         onClick={() => {
                           const line = lines.find((l) => l.dishId === dish.id);
                           if (line) setQty(line.lineId, q - 1);
@@ -198,7 +164,7 @@ export function TableMenuView({ tableId }: Props) {
                       </span>
                       <button
                         type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
+                        className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
                         onClick={() => addDish(dish.id)}
                         aria-label="Больше"
                       >
