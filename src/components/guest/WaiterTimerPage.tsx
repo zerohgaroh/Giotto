@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { BellRing } from "lucide-react";
 import { tableLabelFromId } from "@/lib/table-label";
 
@@ -30,6 +37,10 @@ export function WaiterTimerPage({ tableId }: Props) {
   const timerStorageKey = `giotto:waiter:${tableId}:${isBill ? "bill" : "waiter"}`;
   const [requested, setRequested] = useState(false);
   const [remaining, setRemaining] = useState(WAIT_SEC);
+  const timerDetailsRef = useRef<HTMLDivElement>(null);
+  const [timerDetailsHeight, setTimerDetailsHeight] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     try {
@@ -77,6 +88,18 @@ export function WaiterTimerPage({ tableId }: Props) {
       // ignore storage failures
     }
   }, [requested, remaining, timerStorageKey]);
+
+  useLayoutEffect(() => {
+    const node = timerDetailsRef.current;
+    if (!node) return;
+    setTimerDetailsHeight(node.scrollHeight);
+  }, []);
+
+  useEffect(() => {
+    const node = timerDetailsRef.current;
+    if (!node) return;
+    setTimerDetailsHeight(node.scrollHeight);
+  }, [requested]);
 
   const progress = useMemo(() => remaining / WAIT_SEC, [remaining]);
 
@@ -191,25 +214,34 @@ export function WaiterTimerPage({ tableId }: Props) {
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            {requested ? (
-              <>
-                <p
-                  className="font-mono text-[clamp(2.9rem,14vw,3.5rem)] font-semibold tabular-nums tracking-[-0.04em] text-giotto-navy-deep"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {formatCountdown(remaining)}
-                </p>
-                <span className="mt-1 block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">
-                  до повторного вызова
+          <div
+            className="mt-6 overflow-hidden text-center transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+            style={
+              timerDetailsHeight === null
+                ? undefined
+                : { height: `${timerDetailsHeight}px` }
+            }
+          >
+            <div ref={timerDetailsRef}>
+              {requested ? (
+                <>
+                  <p
+                    className="font-mono text-[clamp(2.9rem,14vw,3.5rem)] font-semibold tabular-nums tracking-[-0.04em] text-giotto-navy-deep"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {formatCountdown(remaining)}
+                  </p>
+                  <span className="mt-1 block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">
+                    до повторного вызова
+                  </span>
+                </>
+              ) : (
+                <span className="block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">
+                  Таймер начнётся после нажатия
                 </span>
-              </>
-            ) : (
-              <span className="block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">
-                Таймер начнётся после нажатия
-              </span>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </section>
