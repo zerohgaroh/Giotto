@@ -15,17 +15,17 @@ export function ComplaintPage({ tableId }: Props) {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh max-w-guest flex-col bg-giotto-paper"
+      className="motion-page mx-auto flex min-h-dvh max-w-guest flex-col bg-giotto-paper"
       style={{
         paddingTop: "max(0.75rem, var(--safe-top))",
         paddingBottom: "max(1.5rem, var(--safe-bottom))",
       }}
     >
-      <header className="border-b border-giotto-line bg-white px-3 py-3">
+      <header className="motion-surface border-b border-giotto-line bg-white px-3 py-3">
         <div className="flex items-center gap-2">
           <Link
             href={base}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper"
+            className="motion-action flex h-11 w-11 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper"
             aria-label="К столу"
           >
             <ChevronLeft className="h-6 w-6" strokeWidth={1.75} />
@@ -49,7 +49,7 @@ export function ComplaintPage({ tableId }: Props) {
               strokeWidth={1.5}
             />
           </div>
-          <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-lift backdrop-blur-sm">
+          <div className="motion-surface mt-6 overflow-hidden rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-lift backdrop-blur-sm">
             <p className="text-center text-[15px] leading-relaxed text-giotto-muted">
               Опишите ситуацию. Сообщение уйдёт администратору зала. Я добавил спокойный
               формат формы, чтобы её было удобно заполнять прямо за столом.
@@ -72,13 +72,13 @@ export function ComplaintPage({ tableId }: Props) {
               type="button"
               disabled={!text.trim()}
               onClick={() => setSent(true)}
-              className="h-[52px] w-full rounded-giotto-lg bg-giotto-navy font-medium text-white transition hover:bg-giotto-navy-deep disabled:opacity-40"
+              className="motion-action h-[52px] w-full rounded-giotto-lg bg-giotto-navy font-medium text-white transition hover:bg-giotto-navy-deep disabled:opacity-40"
             >
               Отправить
             </button>
             <Link
               href={base}
-              className="py-3 text-center text-sm font-medium text-giotto-muted underline decoration-giotto-line underline-offset-4 hover:text-giotto-navy"
+              className="motion-action py-3 text-center text-sm font-medium text-giotto-muted underline decoration-giotto-line underline-offset-4 hover:text-giotto-navy"
             >
               Отмена
             </Link>
@@ -97,7 +97,7 @@ export function ComplaintPage({ tableId }: Props) {
           </p>
           <Link
             href={base}
-            className="mt-10 w-full max-w-xs rounded-giotto-lg bg-giotto-navy py-3.5 text-center font-medium text-white transition hover:bg-giotto-navy-deep"
+            className="motion-action mt-10 w-full max-w-xs rounded-giotto-lg bg-giotto-navy py-3.5 text-center font-medium text-white transition hover:bg-giotto-navy-deep"
           >
             На экран стола
           </Link>

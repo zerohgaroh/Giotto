@@ -25,16 +25,16 @@ export function CartPage({ tableId }: Props) {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-dvh max-w-guest flex-col overflow-hidden bg-[#f6f1e8]">
+    <div className="motion-page relative mx-auto flex min-h-dvh max-w-guest flex-col overflow-hidden bg-[#f6f1e8]">
       <header
-        className="relative z-20 border-b border-white/70 bg-white/70 backdrop-blur-xl"
+        className="motion-surface relative z-20 border-b border-white/70 bg-white/70 backdrop-blur-xl"
         style={{ paddingTop: "max(0.5rem, var(--safe-top))" }}
       >
         <div className="px-3 pb-3 pt-2">
           <div className="flex items-center gap-2">
             <Link
               href={menu}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d9cfbd] bg-white text-giotto-navy transition hover:bg-[#f8f3ea]"
+              className="motion-action flex h-11 w-11 items-center justify-center rounded-full border border-[#d9cfbd] bg-white text-giotto-navy transition hover:bg-[#f8f3ea]"
               aria-label="К меню"
             >
               <ChevronLeft className="h-6 w-6" strokeWidth={1.9} />
@@ -66,7 +66,7 @@ export function CartPage({ tableId }: Props) {
             </p>
             <Link
               href={menu}
-              className="mt-5 inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d6ccba] bg-[#f7f2e8] px-6 text-sm font-semibold text-giotto-navy transition hover:bg-white"
+              className="motion-action mt-5 inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d6ccba] bg-[#f7f2e8] px-6 text-sm font-semibold text-giotto-navy transition hover:bg-white"
             >
               Перейти в меню
             </Link>
@@ -102,7 +102,7 @@ export function CartPage({ tableId }: Props) {
                     <div className="inline-flex items-center rounded-full border border-[#d8cebc] bg-white/90 p-0.5">
                       <button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-giotto-navy transition hover:bg-[#f3eee4]"
+                        className="motion-action flex h-8 w-8 items-center justify-center rounded-full text-giotto-navy transition hover:bg-[#f3eee4]"
                         onClick={() => setQty(line.lineId, line.qty - 1)}
                         aria-label="Меньше"
                       >
@@ -113,7 +113,7 @@ export function CartPage({ tableId }: Props) {
                       </span>
                       <button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-giotto-navy transition hover:bg-[#f3eee4]"
+                        className="motion-action flex h-8 w-8 items-center justify-center rounded-full text-giotto-navy transition hover:bg-[#f3eee4]"
                         onClick={() => setQty(line.lineId, line.qty + 1)}
                         aria-label="Больше"
                       >
@@ -129,7 +129,7 @@ export function CartPage({ tableId }: Props) {
       </main>
 
       {lines.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e2d8c7] bg-[#f8f3ea]/95 px-3 pb-[max(0.65rem,var(--safe-bottom))] pt-2 backdrop-blur-sm">
+        <div className="motion-surface fixed inset-x-0 bottom-0 z-40 border-t border-[#e2d8c7] bg-[#f8f3ea]/95 px-3 pb-[max(0.65rem,var(--safe-bottom))] pt-2 backdrop-blur-sm">
           <div className="mx-auto max-w-guest">
             <div className="mb-2 flex items-end justify-between px-0.5">
               <p className="text-[10px] uppercase tracking-[0.12em] text-giotto-muted">
@@ -143,7 +143,7 @@ export function CartPage({ tableId }: Props) {
             <button
               type="button"
               onClick={checkout}
-              className="flex h-[50px] w-full items-center justify-center rounded-[0.85rem] bg-gradient-to-r from-[#0d2a64] to-[#091c46] text-sm font-semibold text-white transition hover:brightness-105"
+              className="motion-action flex h-[50px] w-full items-center justify-center rounded-[0.85rem] bg-gradient-to-r from-[#0d2a64] to-[#091c46] text-sm font-semibold text-white transition hover:brightness-105"
             >
               Оформить заказ
             </button>

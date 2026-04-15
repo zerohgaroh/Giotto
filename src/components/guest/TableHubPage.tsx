@@ -35,7 +35,7 @@ export function TableHubPage({ tableId }: Props) {
   )}`;
 
   const btn =
-    "flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:bg-giotto-navy-deep hover:border-giotto-navy-deep";
+    "motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:bg-giotto-navy-deep hover:border-giotto-navy-deep";
 
   const copyWifiPassword = async () => {
     try {
@@ -49,7 +49,7 @@ export function TableHubPage({ tableId }: Props) {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-10"
+      className="motion-page mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-10"
       style={{
         paddingTop: "max(1.5rem, var(--safe-top))",
         paddingBottom: "max(2rem, var(--safe-bottom))",
@@ -61,7 +61,7 @@ export function TableHubPage({ tableId }: Props) {
         </p>
       </header>
 
-      <section className="relative mt-8 overflow-hidden rounded-[2.25rem] border border-[#d8d1c3] bg-[#fcfaf6] px-6 pb-8 pt-8 shadow-[0_12px_30px_rgba(8,29,54,0.07)]">
+      <section className="motion-surface relative mt-8 overflow-hidden rounded-[2.25rem] border border-[#d8d1c3] bg-[#fcfaf6] px-6 pb-8 pt-8 shadow-[0_12px_30px_rgba(8,29,54,0.07)]">
         <svg
           aria-hidden
           viewBox="0 0 420 620"
@@ -130,7 +130,7 @@ export function TableHubPage({ tableId }: Props) {
         <button
           type="button"
           onClick={() => setWifiOpen(true)}
-          className="inline-flex items-center gap-2 font-sans text-[14px] font-medium text-giotto-navy-soft underline decoration-giotto-gold/60 underline-offset-4 transition hover:text-giotto-navy"
+          className="motion-action inline-flex items-center gap-2 font-sans text-[14px] font-medium text-giotto-navy-soft underline decoration-giotto-gold/60 underline-offset-4 transition hover:text-giotto-navy"
         >
           <Wifi className="h-4 w-4" strokeWidth={2} />
           Wi‑Fi зала
@@ -144,11 +144,11 @@ export function TableHubPage({ tableId }: Props) {
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
           <button
             type="button"
-            className="absolute inset-0 bg-giotto-navy-deep/55"
+            className="motion-overlay-enter absolute inset-0 bg-giotto-navy-deep/55"
             aria-label="Закрыть"
             onClick={() => setWifiOpen(false)}
           />
-          <div className="relative m-0 w-full max-w-guest rounded-t-giotto-xl border border-giotto-line bg-white p-6 shadow-card sm:m-4 sm:rounded-giotto-lg">
+          <div className="motion-panel-enter relative m-0 w-full max-w-guest rounded-t-giotto-xl border border-giotto-line bg-white p-6 shadow-card sm:m-4 sm:rounded-giotto-lg">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-giotto-gold">
@@ -161,7 +161,7 @@ export function TableHubPage({ tableId }: Props) {
               <button
                 type="button"
                 onClick={() => setWifiOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper"
+                className="motion-action flex h-10 w-10 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper"
                 aria-label="Закрыть"
               >
                 <X className="h-5 w-5" />
@@ -194,7 +194,7 @@ export function TableHubPage({ tableId }: Props) {
               <button
                 type="button"
                 onClick={copyWifiPassword}
-                className="w-full rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[14px] font-medium text-white transition hover:bg-giotto-navy-deep"
+                className="motion-action w-full rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[14px] font-medium text-white transition hover:bg-giotto-navy-deep"
               >
                 {wifiCopied === "password" ? "Пароль скопирован" : "Скопировать пароль"}
               </button>
@@ -202,7 +202,7 @@ export function TableHubPage({ tableId }: Props) {
             <button
               type="button"
               onClick={() => setWifiOpen(false)}
-              className="mt-4 w-full rounded-giotto-lg border border-giotto-line bg-white py-3.5 font-sans text-[15px] font-medium text-giotto-navy-deep transition hover:border-giotto-navy hover:bg-giotto-paper"
+              className="motion-action mt-4 w-full rounded-giotto-lg border border-giotto-line bg-white py-3.5 font-sans text-[15px] font-medium text-giotto-navy-deep transition hover:border-giotto-navy hover:bg-giotto-paper"
             >
               Закрыть
             </button>

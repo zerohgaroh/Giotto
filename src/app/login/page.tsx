@@ -43,8 +43,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   const isInvalidCredentials = searchParams?.error === "invalid";
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-guest items-center px-6 py-10">
-      <section className="w-full rounded-giotto-xl border border-giotto-line bg-white p-6 shadow-card">
+    <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest items-center px-6 py-10">
+      <section className="motion-surface w-full rounded-giotto-xl border border-giotto-line bg-white p-6 shadow-card">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-giotto-muted">
           Giotto Manager
         </p>
@@ -84,7 +84,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 
           <button
             type="submit"
-            className="mt-2 h-11 w-full rounded-giotto bg-giotto-navy text-sm font-semibold text-white transition hover:bg-giotto-navy-deep"
+            className="motion-action mt-2 h-11 w-full rounded-giotto bg-giotto-navy text-sm font-semibold text-white transition hover:bg-giotto-navy-deep"
           >
             Войти
           </button>

@@ -6,9 +6,15 @@
   :root {
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
+    --motion-fast: 180ms;
+    --motion-medium: 280ms;
+    --motion-slow: 420ms;
+    --motion-ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   html {
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
     @apply bg-giotto-paper text-giotto-ink;
   }
@@ -52,9 +58,66 @@
     }
   }
 
+  @keyframes giotto-page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes giotto-surface-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.992);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes giotto-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes giotto-sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
     body {
       animation: none;
+    }
+
+    :where(a, button, input, textarea, select) {
+      transition: none !important;
+    }
+
+    .motion-page,
+    .motion-surface,
+    .motion-overlay-enter,
+    .motion-panel-enter {
+      animation: none !important;
     }
   }
 
@@ -71,5 +134,62 @@
   ::selection {
     background: rgba(184, 146, 74, 0.2);
     color: #061230;
+  }
+
+  :where(a, button, input, textarea, select) {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      opacity,
+      transform,
+      box-shadow,
+      filter;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-soft);
+  }
+}
+
+@layer components {
+  .motion-page {
+    animation: giotto-page-enter var(--motion-slow) var(--motion-ease-out) both;
+  }
+
+  .motion-surface {
+    animation: giotto-surface-enter var(--motion-medium) var(--motion-ease-out) both;
+  }
+
+  .motion-action {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      opacity,
+      transform,
+      box-shadow,
+      filter;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-soft);
+  }
+
+  .motion-action:hover {
+    transform: translateY(-1px);
+  }
+
+  .motion-action:active {
+    transform: scale(0.985);
+  }
+
+  .motion-action:disabled,
+  .motion-action[aria-disabled="true"] {
+    transform: none;
+  }
+
+  .motion-overlay-enter {
+    animation: giotto-fade-in var(--motion-medium) var(--motion-ease-out) both;
+  }
+
+  .motion-panel-enter {
+    animation: giotto-sheet-up var(--motion-medium) var(--motion-ease-out) both;
   }
 }

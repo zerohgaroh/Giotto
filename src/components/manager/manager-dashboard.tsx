@@ -370,8 +370,8 @@ export function ManagerDashboard() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1380px] px-4 py-4 sm:px-6">
-      <div className="overflow-hidden rounded-[28px] border border-giotto-line bg-white/95 shadow-[0_18px_48px_rgba(8,29,54,0.08)]">
+    <main className="motion-page mx-auto w-full max-w-[1380px] px-4 py-4 sm:px-6">
+      <div className="motion-surface overflow-hidden rounded-[28px] border border-giotto-line bg-white/95 shadow-[0_18px_48px_rgba(8,29,54,0.08)]">
         <header className="flex flex-wrap items-center gap-3 border-b border-giotto-line px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <img
@@ -392,7 +392,7 @@ export function ManagerDashboard() {
             </div>
             <Link
               href="/manager/logout"
-              className="inline-flex items-center gap-1 rounded-full border border-giotto-line px-3 py-1 text-xs font-medium text-giotto-ink transition hover:border-giotto-navy hover:text-giotto-navy"
+              className="motion-action inline-flex items-center gap-1 rounded-full border border-giotto-line px-3 py-1 text-xs font-medium text-giotto-ink transition hover:border-giotto-navy hover:text-giotto-navy"
             >
               <LogOut className="h-3.5 w-3.5" />
               Выйти
@@ -409,7 +409,7 @@ export function ManagerDashboard() {
                   type="button"
                   onClick={() => setActiveView(item.id)}
                   className={clsx(
-                    "flex items-center gap-2 rounded-giotto px-3 py-2 text-left text-sm transition",
+                    "motion-action flex items-center gap-2 rounded-giotto px-3 py-2 text-left text-sm transition",
                     activeView === item.id
                       ? "bg-white text-giotto-navy-deep shadow-[0_3px_12px_rgba(8,29,54,0.08)]"
                       : "text-giotto-muted hover:bg-white/70",
@@ -457,7 +457,7 @@ export function ManagerDashboard() {
                         <button
                           type="button"
                           onClick={() => resolveRequest(request.id)}
-                          className="ml-auto rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy"
+                          className="motion-action ml-auto rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy"
                         >
                           Принять
                         </button>
@@ -483,7 +483,10 @@ export function ManagerDashboard() {
                       key={index}
                       type="button"
                       onClick={() => cycleStatus(index)}
-                      className={clsx("rounded-giotto px-2 py-2 text-center", STATUS_META[status].className)}
+                      className={clsx(
+                        "motion-action rounded-giotto px-2 py-2 text-center",
+                        STATUS_META[status].className,
+                      )}
                     >
                       <p className="text-xs font-semibold">#{index + 1}</p>
                       <p className="text-[10px]">{STATUS_META[status].label}</p>
@@ -517,7 +520,7 @@ export function ManagerDashboard() {
                         <button
                           type="button"
                           onClick={() => resolveRequest(request.id)}
-                          className="ml-auto rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy"
+                          className="motion-action ml-auto rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy"
                         >
                           Закрыть
                         </button>
@@ -538,7 +541,7 @@ export function ManagerDashboard() {
                     <button
                       type="button"
                       onClick={startCreateDish}
-                      className="ml-auto inline-flex items-center gap-1 rounded-full border border-giotto-line px-3 py-1 text-xs font-medium text-giotto-ink transition hover:border-giotto-navy"
+                      className="motion-action ml-auto inline-flex items-center gap-1 rounded-full border border-giotto-line px-3 py-1 text-xs font-medium text-giotto-ink transition hover:border-giotto-navy"
                     >
                       <PlusCircle className="h-3.5 w-3.5" />
                       Добавить блюдо
@@ -549,7 +552,7 @@ export function ManagerDashboard() {
                       type="button"
                       onClick={() => setCategoryFilter("all")}
                       className={clsx(
-                        "rounded-full border px-3 py-1 text-xs",
+                        "motion-action rounded-full border px-3 py-1 text-xs",
                         categoryFilter === "all"
                           ? "border-giotto-navy bg-giotto-cream text-giotto-navy-deep"
                           : "border-giotto-line text-giotto-muted",
@@ -563,7 +566,7 @@ export function ManagerDashboard() {
                         type="button"
                         onClick={() => setCategoryFilter(category.id)}
                         className={clsx(
-                          "rounded-full border px-3 py-1 text-xs",
+                          "motion-action rounded-full border px-3 py-1 text-xs",
                           categoryFilter === category.id
                             ? "border-giotto-navy bg-giotto-cream text-giotto-navy-deep"
                             : "border-giotto-line text-giotto-muted",
@@ -596,7 +599,7 @@ export function ManagerDashboard() {
                       <button
                         type="button"
                         onClick={createCategory}
-                        className="inline-flex h-10 items-center justify-center gap-1 rounded-md bg-giotto-navy px-3 text-xs font-medium text-white"
+                        className="motion-action inline-flex h-10 items-center justify-center gap-1 rounded-md bg-giotto-navy px-3 text-xs font-medium text-white"
                       >
                         <PlusCircle className="h-3.5 w-3.5" />
                         Добавить категорию
@@ -609,7 +612,7 @@ export function ManagerDashboard() {
                           type="button"
                           onClick={() => setNewCategoryIcon(icon)}
                           className={clsx(
-                            "rounded-md border px-2 py-1 text-sm",
+                            "motion-action rounded-md border px-2 py-1 text-sm",
                             newCategoryIcon === icon
                               ? "border-giotto-navy bg-white"
                               : "border-giotto-line bg-white/70",
@@ -634,7 +637,7 @@ export function ManagerDashboard() {
                           alt="Превью блюда"
                           className="h-40 w-full rounded-giotto-xl border border-giotto-line object-cover"
                         />
-                        <label className="mt-2 inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
+                        <label className="motion-action mt-2 inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
                           <ImagePlus className="h-3.5 w-3.5" />
                           Загрузить фото
                           <input
@@ -722,7 +725,7 @@ export function ManagerDashboard() {
                           <button
                             type="button"
                             onClick={saveDish}
-                            className="inline-flex items-center gap-1 rounded-md bg-giotto-navy px-3 py-1.5 text-xs font-medium text-white"
+                            className="motion-action inline-flex items-center gap-1 rounded-md bg-giotto-navy px-3 py-1.5 text-xs font-medium text-white"
                           >
                             <Save className="h-3.5 w-3.5" />
                             {editorMode === "create" ? "Добавить блюдо" : "Сохранить изменения"}
@@ -730,7 +733,7 @@ export function ManagerDashboard() {
                           <button
                             type="button"
                             onClick={() => setEditorOpen(false)}
-                            className="rounded-md border border-giotto-line px-3 py-1.5 text-xs"
+                            className="motion-action rounded-md border border-giotto-line px-3 py-1.5 text-xs"
                           >
                             Отмена
                           </button>
@@ -764,7 +767,7 @@ export function ManagerDashboard() {
                             type="button"
                             onClick={() => toggleDishAvailability(dish.id)}
                             className={clsx(
-                              "rounded-md px-2 py-1 text-xs",
+                              "motion-action rounded-md px-2 py-1 text-xs",
                               dish.available === false
                                 ? "bg-[#FCEBEB] text-[#A32D2D]"
                                 : "bg-[#EAF3DE] text-[#3B6D11]",
@@ -776,7 +779,7 @@ export function ManagerDashboard() {
                             <button
                               type="button"
                               onClick={() => startEditDish(dish)}
-                              className="rounded-md border border-giotto-line p-1.5 text-giotto-muted hover:border-giotto-navy hover:text-giotto-navy"
+                              className="motion-action rounded-md border border-giotto-line p-1.5 text-giotto-muted hover:border-giotto-navy hover:text-giotto-navy"
                               aria-label="Редактировать блюдо"
                             >
                               <PencilLine className="h-3.5 w-3.5" />
@@ -784,7 +787,7 @@ export function ManagerDashboard() {
                             <button
                               type="button"
                               onClick={() => deleteDish(dish.id)}
-                              className="rounded-md border border-giotto-line p-1.5 text-[#A32D2D] hover:border-[#A32D2D]"
+                              className="motion-action rounded-md border border-giotto-line p-1.5 text-[#A32D2D] hover:border-[#A32D2D]"
                               aria-label="Удалить блюдо"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -819,7 +822,7 @@ export function ManagerDashboard() {
                       alt="Логотип"
                       className="h-28 w-28 rounded-full border border-giotto-line object-cover"
                     />
-                    <label className="mt-2 inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
+                    <label className="motion-action mt-2 inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
                       <ImagePlus className="h-3.5 w-3.5" />
                       Логотип (файл)
                       <input
@@ -881,7 +884,7 @@ export function ManagerDashboard() {
                     className="h-40 w-full rounded-giotto-xl border border-giotto-line object-cover"
                   />
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
+                    <label className="motion-action inline-flex cursor-pointer items-center gap-1 rounded-md border border-giotto-line px-2 py-1 text-xs hover:border-giotto-navy">
                       <ImagePlus className="h-3.5 w-3.5" />
                       Баннер (файл)
                       <input
@@ -896,7 +899,7 @@ export function ManagerDashboard() {
                     <button
                       type="button"
                       onClick={saveProfile}
-                      className="inline-flex items-center gap-1 rounded-md bg-giotto-navy px-3 py-1.5 text-xs font-medium text-white"
+                      className="motion-action inline-flex items-center gap-1 rounded-md bg-giotto-navy px-3 py-1.5 text-xs font-medium text-white"
                     >
                       <Save className="h-3.5 w-3.5" />
                       Сохранить профиль
@@ -904,7 +907,7 @@ export function ManagerDashboard() {
                     <button
                       type="button"
                       onClick={resetData}
-                      className="inline-flex items-center gap-1 rounded-md border border-giotto-line px-3 py-1.5 text-xs"
+                      className="motion-action inline-flex items-center gap-1 rounded-md border border-giotto-line px-3 py-1.5 text-xs"
                     >
                       <Wifi className="h-3.5 w-3.5" />
                       Сбросить демо-данные
@@ -922,7 +925,7 @@ export function ManagerDashboard() {
 
 function Kpi({ title, value, subtitle }: { title: string; value: string; subtitle: string }) {
   return (
-    <div className="rounded-giotto-xl bg-giotto-cream/45 px-3 py-3">
+    <div className="motion-surface rounded-giotto-xl bg-giotto-cream/45 px-3 py-3">
       <p className="text-xs text-giotto-muted">{title}</p>
       <p className="mt-1 text-lg font-semibold text-giotto-navy-deep">{value}</p>
       <p className="text-[11px] text-giotto-muted">{subtitle}</p>
@@ -945,7 +948,7 @@ function Field({
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 rounded-md border border-giotto-line px-2 text-sm outline-none focus:border-giotto-navy"
+        className="motion-action h-10 rounded-md border border-giotto-line px-2 text-sm outline-none focus:border-giotto-navy"
       />
     </label>
   );

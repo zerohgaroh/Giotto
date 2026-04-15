@@ -5,7 +5,7 @@ const DEMO_TABLES = ["1", "2", "3", "4", "5", "demo"] as const;
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-guest flex-col bg-gradient-to-b from-giotto-cream via-giotto-paper to-giotto-paper px-6 py-12">
+    <main className="motion-page mx-auto flex min-h-dvh max-w-guest flex-col bg-gradient-to-b from-giotto-cream via-giotto-paper to-giotto-paper px-6 py-12">
       <div className="flex flex-1 flex-col justify-center text-center">
         <div className="flex justify-center">
           <GiottoLogo size={112} priority />
@@ -30,7 +30,7 @@ export default function Home() {
               <li key={id}>
                 <Link
                   href={`/table/${id}`}
-                  className="flex min-h-[3rem] items-center justify-center rounded-giotto-lg border-2 border-giotto-navy bg-white font-sans text-[14px] font-semibold text-giotto-navy shadow-lift transition hover:bg-giotto-navy hover:text-white active:scale-[0.99]"
+                  className="motion-action flex min-h-[3rem] items-center justify-center rounded-giotto-lg border-2 border-giotto-navy bg-white font-sans text-[14px] font-semibold text-giotto-navy shadow-lift transition hover:bg-giotto-navy hover:text-white active:scale-[0.99]"
                 >
                   Стол {/^\d+$/.test(id) ? `№${id}` : id}
                 </Link>
@@ -39,7 +39,7 @@ export default function Home() {
           </ul>
         </div>
 
-        <details className="mx-auto mt-12 max-w-md rounded-giotto-lg border border-giotto-line bg-white/80 px-4 py-3 text-left text-[13px] text-giotto-muted backdrop-blur-sm open:shadow-lift">
+        <details className="motion-surface mx-auto mt-12 max-w-md rounded-giotto-lg border border-giotto-line bg-white/80 px-4 py-3 text-left text-[13px] text-giotto-muted backdrop-blur-sm open:shadow-lift">
           <summary className="cursor-pointer select-none font-medium text-giotto-navy-deep">
             NFC и короткая ссылка
           </summary>

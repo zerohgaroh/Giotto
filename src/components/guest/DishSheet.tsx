@@ -27,7 +27,7 @@ export function DishSheet({ dish, open, onClose, onAdd }: Props) {
       <button
         type="button"
         className={clsx(
-          "absolute inset-0 bg-giotto-navy-deep/50 transition-opacity duration-200",
+          "motion-overlay-enter absolute inset-0 bg-giotto-navy-deep/50 transition-opacity duration-200",
           open ? "opacity-100" : "opacity-0",
         )}
         onClick={onClose}
@@ -35,7 +35,7 @@ export function DishSheet({ dish, open, onClose, onAdd }: Props) {
       />
       <div
         className={clsx(
-          "relative max-h-[90dvh] w-full max-w-guest overflow-hidden rounded-t-giotto-xl border border-giotto-line bg-white shadow-card transition duration-200 sm:rounded-giotto-lg",
+          "motion-panel-enter relative max-h-[90dvh] w-full max-w-guest overflow-hidden rounded-t-giotto-xl border border-giotto-line bg-white shadow-card transition duration-200 sm:rounded-giotto-lg",
           open ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 sm:translate-y-4",
         )}
         role="dialog"
@@ -55,7 +55,7 @@ export function DishSheet({ dish, open, onClose, onAdd }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/95 text-giotto-navy shadow-lift"
+              className="motion-action absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/95 text-giotto-navy shadow-lift"
               aria-label="Закрыть"
             >
               <X className="h-5 w-5" />
@@ -89,7 +89,7 @@ export function DishSheet({ dish, open, onClose, onAdd }: Props) {
                   onAdd();
                   onClose();
                 }}
-                className="min-h-[48px] min-w-[140px] rounded-giotto-lg bg-giotto-navy px-6 font-sans text-[15px] font-medium text-white transition hover:bg-giotto-navy-deep active:scale-[0.99]"
+                className="motion-action min-h-[48px] min-w-[140px] rounded-giotto-lg bg-giotto-navy px-6 font-sans text-[15px] font-medium text-white transition hover:bg-giotto-navy-deep active:scale-[0.99]"
               >
                 В корзину
               </button>

@@ -120,7 +120,7 @@ export function WaiterTimerPage({ tableId }: Props) {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-8"
+      className="motion-page mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-8"
       style={{
         paddingTop: "max(1.25rem, var(--safe-top))",
         paddingBottom: "max(1.5rem, var(--safe-bottom))",
@@ -135,7 +135,7 @@ export function WaiterTimerPage({ tableId }: Props) {
         </p>
       </header>
 
-      <section className="relative mt-5 overflow-hidden rounded-[2.2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.86))] px-5 pb-8 pt-6 shadow-card backdrop-blur-md">
+      <section className="motion-surface relative mt-5 overflow-hidden rounded-[2.2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.86))] px-5 pb-8 pt-6 shadow-card backdrop-blur-md">
         <div className="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.14),transparent_72%)]" />
         <div className="text-center">
           <span className="inline-flex rounded-full border border-giotto-gold/35 bg-giotto-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-giotto-navy-deep">
@@ -251,13 +251,13 @@ export function WaiterTimerPage({ tableId }: Props) {
           type="button"
           onClick={sendRequest}
           disabled={requested && !canRecall}
-          className="min-h-[3.5rem] w-full rounded-[1.45rem] border-2 border-giotto-navy bg-giotto-navy font-sans text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-lift transition hover:bg-giotto-navy-deep active:scale-[0.99] motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-[#a7b2c8] disabled:bg-[#a7b2c8] disabled:text-white/80 disabled:shadow-none disabled:hover:bg-[#a7b2c8]"
+          className="motion-action min-h-[3.5rem] w-full rounded-[1.45rem] border-2 border-giotto-navy bg-giotto-navy font-sans text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-lift transition hover:bg-giotto-navy-deep active:scale-[0.99] motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-[#a7b2c8] disabled:bg-[#a7b2c8] disabled:text-white/80 disabled:shadow-none disabled:hover:bg-[#a7b2c8]"
         >
           {actionLabel}
         </button>
         <Link
           href={base}
-          className="flex min-h-[3.2rem] w-full items-center justify-center rounded-[1.35rem] border border-giotto-line bg-white/92 font-sans text-[14px] font-medium text-giotto-navy-deep backdrop-blur-sm transition hover:border-giotto-navy"
+          className="motion-action flex min-h-[3.2rem] w-full items-center justify-center rounded-[1.35rem] border border-giotto-line bg-white/92 font-sans text-[14px] font-medium text-giotto-navy-deep backdrop-blur-sm transition hover:border-giotto-navy"
         >
           На экран стола
         </Link>

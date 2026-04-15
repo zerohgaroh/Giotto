@@ -51,7 +51,7 @@ export function TableMenuView({ tableId }: Props) {
     lines.filter((l) => l.dishId === id).reduce((s, l) => s + l.qty, 0);
 
   return (
-    <div className="flex min-h-dvh flex-col pb-[calc(5.5rem+var(--safe-bottom))]">
+    <div className="motion-page flex min-h-dvh flex-col pb-[calc(5.5rem+var(--safe-bottom))]">
       <header
         className="sticky top-0 z-30 border-b border-giotto-line/90 bg-giotto-cream/90 shadow-[0_1px_0_rgba(8,29,54,0.04)] backdrop-blur-md"
         style={{ paddingTop: "max(0.5rem, var(--safe-top))" }}
@@ -59,7 +59,7 @@ export function TableMenuView({ tableId }: Props) {
         <div className="mx-auto flex max-w-guest items-center gap-2 px-3 py-2">
           <Link
             href={base}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-giotto-line bg-white text-giotto-navy transition hover:bg-giotto-paper"
+            className="motion-action flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-giotto-line bg-white text-giotto-navy transition hover:bg-giotto-paper"
             aria-label="К столу"
           >
             <ChevronLeft className="h-6 w-6" strokeWidth={1.75} />
@@ -83,7 +83,7 @@ export function TableMenuView({ tableId }: Props) {
                 type="button"
                 onClick={() => setCat(c.id)}
                 className={clsx(
-                  "shrink-0 rounded-full border px-4 py-2 font-sans text-[13px] font-medium transition active:scale-[0.98]",
+                  "motion-action shrink-0 rounded-full border px-4 py-2 font-sans text-[13px] font-medium transition active:scale-[0.98]",
                   on
                     ? "border-giotto-navy bg-giotto-navy text-white shadow-lift"
                     : "border-giotto-line bg-white/90 text-giotto-muted hover:border-giotto-navy-soft hover:text-giotto-navy",
@@ -103,7 +103,7 @@ export function TableMenuView({ tableId }: Props) {
             return (
               <article
                 key={dish.id}
-                className="group flex flex-col overflow-hidden rounded-[1.35rem] border border-[#ece5d8] bg-white shadow-[0_8px_22px_rgba(8,29,54,0.08)] ring-0 transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card"
+                className="motion-surface group flex flex-col overflow-hidden rounded-[1.35rem] border border-[#ece5d8] bg-white shadow-[0_8px_22px_rgba(8,29,54,0.08)] ring-0 transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card"
               >
                 <button
                   type="button"
@@ -138,7 +138,7 @@ export function TableMenuView({ tableId }: Props) {
                     <button
                       type="button"
                       onClick={() => addDish(dish.id)}
-                      className="flex min-h-[2.8rem] w-full items-center justify-center gap-1.5 rounded-[0.9rem] bg-giotto-navy text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)] transition hover:bg-giotto-navy-deep active:scale-95"
+                      className="motion-action flex min-h-[2.8rem] w-full items-center justify-center gap-1.5 rounded-[0.9rem] bg-giotto-navy text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)] transition hover:bg-giotto-navy-deep active:scale-95"
                       aria-label="Добавить"
                     >
                       <Plus className="h-4.5 w-4.5" strokeWidth={2.2} />
@@ -150,7 +150,7 @@ export function TableMenuView({ tableId }: Props) {
                     <div className="flex min-h-[2.8rem] w-full items-center justify-between rounded-[0.9rem] bg-giotto-navy px-1.5 py-1 text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)]">
                       <button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
+                        className="motion-action flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
                         onClick={() => {
                           const line = lines.find((l) => l.dishId === dish.id);
                           if (line) setQty(line.lineId, q - 1);
@@ -164,7 +164,7 @@ export function TableMenuView({ tableId }: Props) {
                       </span>
                       <button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
+                        className="motion-action flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15"
                         onClick={() => addDish(dish.id)}
                         aria-label="Больше"
                       >
@@ -178,7 +178,7 @@ export function TableMenuView({ tableId }: Props) {
           })}
         </div>
         {visible.length === 0 ? (
-          <div className="rounded-giotto-lg border border-giotto-line bg-white px-4 py-8 text-center text-sm text-giotto-muted">
+          <div className="motion-surface rounded-giotto-lg border border-giotto-line bg-white px-4 py-8 text-center text-sm text-giotto-muted">
             В этой категории пока нет доступных блюд.
           </div>
         ) : null}
@@ -192,14 +192,14 @@ export function TableMenuView({ tableId }: Props) {
       />
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-giotto-line bg-white px-4 py-2 shadow-[0_-8px_30px_rgba(8,29,54,0.06)]"
+        className="motion-surface fixed inset-x-0 bottom-0 z-40 border-t border-giotto-line bg-white px-4 py-2 shadow-[0_-8px_30px_rgba(8,29,54,0.06)]"
         style={{ paddingBottom: "max(0.5rem, var(--safe-bottom))" }}
         aria-label="Быстрые действия"
       >
         <div className="mx-auto flex max-w-guest gap-3">
           <Link
             href={`${base}/cart`}
-            className="relative flex flex-1 items-center justify-center gap-2 rounded-giotto-lg border-2 border-giotto-navy bg-white py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-giotto-navy transition hover:bg-giotto-navy hover:text-white"
+            className="motion-action relative flex flex-1 items-center justify-center gap-2 rounded-giotto-lg border-2 border-giotto-navy bg-white py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-giotto-navy transition hover:bg-giotto-navy hover:text-white"
           >
             <ShoppingBag className="h-5 w-5" strokeWidth={1.75} />
             Корзина
@@ -211,7 +211,7 @@ export function TableMenuView({ tableId }: Props) {
           </Link>
           <Link
             href={`${base}/waiter`}
-            className="flex flex-1 items-center justify-center gap-2 rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-white shadow-lift transition hover:bg-giotto-navy-deep"
+            className="motion-action flex flex-1 items-center justify-center gap-2 rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-white shadow-lift transition hover:bg-giotto-navy-deep"
           >
             <Bell className="h-5 w-5" strokeWidth={1.75} />
             Вызов

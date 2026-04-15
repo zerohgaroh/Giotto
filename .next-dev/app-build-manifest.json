@@ -31,6 +31,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/table/[tableId]/cart/page.js"
     ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
