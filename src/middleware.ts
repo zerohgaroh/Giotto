@@ -17,5 +17,5 @@ export function middleware() {
 }
 
 export const config = {
-  matcher: ["/", "/table/:path*", "/t/:path*"],
+  matcher: ["/", "/table/:path*", "/t/:path*", "/waiter/:path*"],
 };

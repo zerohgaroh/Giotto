@@ -39,6 +39,21 @@ export default function Home() {
           </ul>
         </div>
 
+        <div className="mx-auto mt-4 grid w-full max-w-xs grid-cols-2 gap-2.5">
+          <Link
+            href="/waiter/login"
+            className="motion-action flex min-h-[2.7rem] items-center justify-center rounded-giotto-lg border border-giotto-line bg-white text-[12px] font-semibold uppercase tracking-[0.08em] text-giotto-navy"
+          >
+            Официант
+          </Link>
+          <Link
+            href="/login"
+            className="motion-action flex min-h-[2.7rem] items-center justify-center rounded-giotto-lg border border-giotto-line bg-white text-[12px] font-semibold uppercase tracking-[0.08em] text-giotto-navy"
+          >
+            Менеджер
+          </Link>
+        </div>
+
         <details className="motion-surface mx-auto mt-12 max-w-md rounded-giotto-lg border border-giotto-line bg-white/80 px-4 py-3 text-left text-[13px] text-giotto-muted backdrop-blur-sm open:shadow-lift">
           <summary className="cursor-pointer select-none font-medium text-giotto-navy-deep">
             NFC и короткая ссылка

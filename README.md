@@ -21,10 +21,13 @@ npm run dev
 | `/table/<id>/cart` | Корзина |
 | `/table/<id>/waiter` | Таймер вызова (`?intent=bill` — счет) |
 | `/table/<id>/complaint` | Жалоба |
+| `/waiter/login` | Вход официанта |
+| `/waiter` | Мои столы официанта |
+| `/waiter/tables/<id>` | Детали стола официанта |
+| `/waiter/tables/<id>/add-order` | Добавить заказ официантом |
 
 ## Сборка
 
 ```bash
 npm run build && npm run start
 ```
-
