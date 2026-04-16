@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { BellRing } from "lucide-react";
+import { readHallData, writeHallData } from "@/lib/service-store";
 import { tableLabelFromId } from "@/lib/table-label";
 
 type Props = { tableId: string };
@@ -106,6 +107,18 @@ export function WaiterTimerPage({ tableId }: Props) {
   const dashOffset = CIRC * (1 - progress);
   const canRecall = requested && remaining === 0;
   const ringSize = "h-[min(68vmin,15rem)] w-[min(68vmin,15rem)]";
+  const numericTableId = useMemo(() => {
+    let normalized = tableId;
+    try {
+      normalized = decodeURIComponent(tableId);
+    } catch {
+      normalized = tableId;
+    }
+    normalized = normalized.trim();
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
+  }, [tableId]);
 
   const sendRequest = useCallback(() => {
     const expiresAt = Date.now() + WAIT_SEC * 1000;
@@ -116,7 +129,44 @@ export function WaiterTimerPage({ tableId }: Props) {
     } catch {
       // ignore storage failures
     }
-  }, [timerStorageKey]);
+
+    if (!numericTableId) return;
+    try {
+      const createdAt = Date.now();
+      const requestType = isBill ? "bill" : "waiter";
+      const reason = isBill ? "Гости готовы оплатить" : "Гости вызывают официанта";
+      const current = readHallData();
+      const alreadyActive = current.requests.some(
+        (request) =>
+          request.tableId === numericTableId &&
+          request.type === requestType &&
+          !request.resolvedAt,
+      );
+
+      writeHallData({
+        ...current,
+        tables: current.tables.map((table) =>
+          table.tableId === numericTableId
+            ? { ...table, status: isBill ? "bill" : "waiting" }
+            : table,
+        ),
+        requests: alreadyActive
+          ? current.requests
+          : [
+              ...current.requests,
+              {
+                id: `rq-${requestType}-${numericTableId}-${createdAt}`,
+                tableId: numericTableId,
+                type: requestType,
+                reason,
+                createdAt,
+              },
+            ],
+      });
+    } catch {
+      // ignore storage failures
+    }
+  }, [isBill, numericTableId, timerStorageKey]);
 
   return (
     <div

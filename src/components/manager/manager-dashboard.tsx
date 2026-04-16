@@ -182,7 +182,7 @@ export function ManagerDashboard() {
   const { data: hallData, updateData: updateHallData, resetData: resetHallData } = useHallData();
 
   const [activeView, setActiveView] = useState<ViewId>("hall");
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyWaiter, setHistoryWaiter] = useState("all");
@@ -213,9 +213,23 @@ export function ManagerDashboard() {
   const [shakingTableIds, setShakingTableIds] = useState<number[]>([]);
 
   useEffect(() => {
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const clockLabel = now > 0 ? new Date(now).toLocaleTimeString("ru-RU") : "--:--";
+  const durationLabel = (startMs: number) =>
+    now > 0 ? formatDurationFrom(startMs, now) : "00:00";
+  const timeLabel = (timeMs: number) =>
+    now > 0
+      ? new Date(timeMs).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "--:--";
+  const minutesAgoLabel = (timeMs: number) =>
+    now > 0 ? formatMinutesAgo(timeMs, now) : "—";
 
   useEffect(() => {
     if (floorDirty) return;
@@ -510,7 +524,7 @@ export function ManagerDashboard() {
                     <Kpi title="Занято столов" value={`${occupiedCount}/${tables.length}`} subtitle="Текущая загрузка" />
                     <Kpi title="Активные вызовы" value={String(unresolvedRequests.length)} subtitle="Реальное время" />
                     <Kpi title="Средняя реакция" value={`${averageResponseMinutes || 0} мин`} subtitle="По закрытым вызовам" />
-                    <Kpi title="Время" value={new Date(now).toLocaleTimeString("ru-RU")} subtitle="Текущий момент" />
+                    <Kpi title="Время" value={clockLabel} subtitle="Текущий момент" />
                   </div>
                 </section>
 
@@ -546,12 +560,12 @@ export function ManagerDashboard() {
                             👤 {waiter?.name ?? "Без официанта"}
                           </p>
                           <p className="mt-0.5 font-mono text-[12px] font-semibold text-giotto-navy-deep">
-                            ⏱ {formatDurationFrom(table.guestStartedAt, now)}
+                            ⏱ {durationLabel(table.guestStartedAt)}
                           </p>
                           {request ? (
                             <p className="mt-2 flex items-center gap-1 rounded-md bg-[#FFF7EA] px-2 py-1 text-[11px] text-[#8A6A33]">
                               <BellRing className="h-3.5 w-3.5" strokeWidth={1.7} />
-                              Вызов: {request.reason} · {new Date(request.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                              Вызов: {request.reason} · {timeLabel(request.createdAt)}
                             </p>
                           ) : null}
                         </button>
@@ -571,7 +585,7 @@ export function ManagerDashboard() {
                           {STATUS_META[selectedTable.status].label}
                         </span>
                         <span className="ml-auto font-mono text-sm text-giotto-navy-deep">
-                          {formatDurationFrom(selectedTable.guestStartedAt, now)}
+                          {durationLabel(selectedTable.guestStartedAt)}
                         </span>
                       </div>
 
@@ -609,7 +623,7 @@ export function ManagerDashboard() {
                                       {REQUEST_META[request.type].title}
                                     </p>
                                     <p className="text-xs text-giotto-muted">{request.reason}</p>
-                                    <p className="text-[11px] text-giotto-muted">{formatMinutesAgo(request.createdAt, now)}</p>
+                                    <p className="text-[11px] text-giotto-muted">{minutesAgoLabel(request.createdAt)}</p>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -674,10 +688,7 @@ export function ManagerDashboard() {
                                 <div key={request.id} className="rounded-md border border-giotto-line px-2 py-1.5 text-xs">
                                   <p className="font-medium">{REQUEST_META[request.type].title}</p>
                                   <p className="text-giotto-muted">
-                                    {new Date(request.createdAt).toLocaleTimeString("ru-RU", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
+                                    {timeLabel(request.createdAt)}
                                     {request.acknowledgedAt
                                       ? ` · Реакция ${Math.max(1, Math.round((request.acknowledgedAt - request.createdAt) / 60000))} мин`
                                       : " · В обработке"}
@@ -1419,10 +1430,7 @@ export function ManagerDashboard() {
                 return (
                   <div key={request.id} className="rounded-md border border-giotto-line px-3 py-2 text-sm">
                     <p className="font-medium text-giotto-navy-deep">
-                      {new Date(request.createdAt).toLocaleTimeString("ru-RU", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {timeLabel(request.createdAt)}
                       {"  "}
                       Стол {request.tableId} · {REQUEST_META[request.type].title}
                     </p>

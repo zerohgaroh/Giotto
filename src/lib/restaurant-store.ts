@@ -6,6 +6,8 @@ import type { Dish, RestaurantData } from "@/lib/types";
 
 const STORAGE_KEY = "giotto.restaurant.data.v1";
 const UPDATE_EVENT = "giotto:restaurant-data-updated";
+const RESTAURANT_API = "/api/restaurant";
+const STATE_EVENTS_API = "/api/state/events";
 
 const DEFAULT_DATA: RestaurantData = {
   profile: DEFAULT_RESTAURANT_PROFILE,
@@ -69,10 +71,35 @@ export function readRestaurantData(): RestaurantData {
   }
 }
 
+async function fetchRestaurantDataFromApi(): Promise<RestaurantData | null> {
+  try {
+    const response = await fetch(RESTAURANT_API, { cache: "no-store" });
+    if (!response.ok) return null;
+    const raw = await response.json();
+    return normalizeData(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function pushRestaurantDataToApi(data: RestaurantData): Promise<void> {
+  try {
+    await fetch(RESTAURANT_API, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
+  } catch {
+    // ignore temporary sync failures
+  }
+}
+
 export function writeRestaurantData(data: RestaurantData): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
+  void pushRestaurantDataToApi(data);
 }
 
 export function getDishByIdFromData(dishes: Dish[], dishId: string): Dish | undefined {
@@ -82,8 +109,23 @@ export function getDishByIdFromData(dishes: Dish[], dishId: string): Dish | unde
 export function useRestaurantData() {
   const [data, setData] = useState<RestaurantData>(DEFAULT_DATA);
 
+  const pullFromApi = useCallback(async () => {
+    const remote = await fetchRestaurantDataFromApi();
+    if (!remote) return;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+      window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
+    }
+    setData(remote);
+  }, []);
+
   useEffect(() => {
     setData(readRestaurantData());
+    void pullFromApi();
+
+    const poll = window.setInterval(() => {
+      void pullFromApi();
+    }, 3000);
 
     const sync = () => {
       setData(readRestaurantData());
@@ -91,11 +133,23 @@ export function useRestaurantData() {
 
     window.addEventListener("storage", sync);
     window.addEventListener(UPDATE_EVENT, sync as EventListener);
+
+    const events = new EventSource(STATE_EVENTS_API);
+    const onServerUpdate = () => {
+      void pullFromApi();
+    };
+    events.addEventListener("restaurant:updated", onServerUpdate);
+    events.addEventListener("state:reset", onServerUpdate);
+
     return () => {
+      window.clearInterval(poll);
       window.removeEventListener("storage", sync);
       window.removeEventListener(UPDATE_EVENT, sync as EventListener);
+      events.removeEventListener("restaurant:updated", onServerUpdate);
+      events.removeEventListener("state:reset", onServerUpdate);
+      events.close();
     };
-  }, []);
+  }, [pullFromApi]);
 
   const updateData = useCallback(
     (updater: (current: RestaurantData) => RestaurantData) => {

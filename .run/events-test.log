@@ -1,0 +1,6 @@
+event: ready
+data: {"at":1776354792013}
+
+event: hall:updated
+data: {"type":"hall:updated","revision":3,"updatedAt":1776354792966}
+

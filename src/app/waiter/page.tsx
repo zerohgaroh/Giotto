@@ -6,7 +6,7 @@ import { WAITER_COOKIE, findWaiterById } from "@/lib/waiter-auth";
 export default function WaiterPage() {
   const waiterId = cookies().get(WAITER_COOKIE)?.value;
   if (!waiterId || !findWaiterById(waiterId)) {
-    redirect("/waiter/login");
+    redirect("/login");
   }
 
   return <WaiterDashboardPage waiterId={waiterId} />;

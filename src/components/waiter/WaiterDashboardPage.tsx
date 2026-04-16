@@ -14,12 +14,16 @@ type Props = {
 
 export function WaiterDashboardPage({ waiterId }: Props) {
   const { data } = useHallData();
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const durationLabel = (startMs: number) =>
+    now > 0 ? formatDurationFrom(startMs, now) : "00:00";
 
   const waiter = useMemo(
     () => data.waiters.find((candidate) => candidate.id === waiterId),
@@ -108,7 +112,7 @@ export function WaiterDashboardPage({ waiterId }: Props) {
 
                   <p className="mt-2 text-[12px] text-giotto-muted">{waiter?.name ?? "Официант"}</p>
                   <p className="mt-0.5 font-mono text-[12px] font-semibold text-giotto-navy-deep">
-                    ⏱ {formatDurationFrom(table.guestStartedAt, now)}
+                    ⏱ {durationLabel(table.guestStartedAt)}
                   </p>
 
                   {table.activeRequest ? (

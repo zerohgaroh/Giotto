@@ -19,10 +19,11 @@ type Props = {
 
 export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
   const { data, updateData } = useHallData();
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
   const [noteDraft, setNoteDraft] = useState("");
 
   useEffect(() => {
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -80,6 +81,18 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
     );
   }
 
+  const durationLabel = (startMs: number) =>
+    now > 0 ? formatDurationFrom(startMs, now) : "00:00";
+  const requestTimeLabel = (timeMs: number) =>
+    now > 0
+      ? new Date(timeMs).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "--:--";
+  const minutesAgoLabel = (timeMs: number) =>
+    now > 0 ? formatMinutesAgo(timeMs, now) : "—";
+
   const statusMeta = STATUS_META[table.status];
   const cooldownLeft = Math.max(0, (table.doneCooldownUntil ?? 0) - now);
   const cooldownLabel = `${Math.floor(cooldownLeft / 1000)}с`;
@@ -107,7 +120,7 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
           </div>
 
           <p className="font-mono text-[12px] font-semibold text-giotto-navy-deep">
-            {formatDurationFrom(table.guestStartedAt, now)}
+            {durationLabel(table.guestStartedAt)}
           </p>
         </div>
       </header>
@@ -127,12 +140,9 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
                   </p>
                   <p className="mt-0.5 text-[13px] text-giotto-muted">Причина: {request.reason}</p>
                   <p className="mt-0.5 text-[11px] text-giotto-muted">
-                    {new Date(request.createdAt).toLocaleTimeString("ru-RU", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {requestTimeLabel(request.createdAt)}
                     {" · "}
-                    {formatMinutesAgo(request.createdAt, now)}
+                    {minutesAgoLabel(request.createdAt)}
                   </p>
                 </div>
               </div>

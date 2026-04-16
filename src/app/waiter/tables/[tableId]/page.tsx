@@ -10,7 +10,7 @@ type Props = {
 export default function WaiterTablePage({ params }: Props) {
   const waiterId = cookies().get(WAITER_COOKIE)?.value;
   if (!waiterId || !findWaiterById(waiterId)) {
-    redirect("/waiter/login");
+    redirect("/login");
   }
 
   const tableId = Number(params.tableId);

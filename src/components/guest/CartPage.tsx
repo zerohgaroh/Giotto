@@ -7,6 +7,7 @@ import { ChevronLeft, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { formatPriceUZS } from "@/lib/format";
 import { getDishByIdFromData, useRestaurantData } from "@/lib/restaurant-store";
+import { readHallData, writeHallData } from "@/lib/service-store";
 
 type Props = { tableId: string };
 
@@ -20,6 +21,56 @@ export function CartPage({ tableId }: Props) {
 
   const checkout = () => {
     if (lines.length === 0) return;
+
+    let normalized = tableId;
+    try {
+      normalized = decodeURIComponent(tableId);
+    } catch {
+      normalized = tableId;
+    }
+    normalized = normalized.trim();
+    const numericTableId = Number(normalized);
+    if (Number.isFinite(numericTableId) && numericTableId > 0) {
+      try {
+        const current = readHallData();
+        const createdAt = Date.now();
+        const nextLines = lines.flatMap((line, index) => {
+          const dish = getDishByIdFromData(data.dishes, line.dishId);
+          if (!dish) return [];
+          return [
+            {
+              id: `bill-guest-${numericTableId}-${createdAt}-${index}`,
+              tableId: numericTableId,
+              dishId: dish.id,
+              title: dish.nameRu,
+              qty: line.qty,
+              price: dish.price,
+              source: "guest" as const,
+              createdAt,
+            },
+          ];
+        });
+
+        if (nextLines.length > 0) {
+          writeHallData({
+            ...current,
+            tables: current.tables.map((table) =>
+              table.tableId === numericTableId
+                ? {
+                    ...table,
+                    status: "ordered",
+                    guestStartedAt: table.status === "free" ? createdAt : table.guestStartedAt,
+                  }
+                : table,
+            ),
+            billLines: [...current.billLines, ...nextLines],
+          });
+        }
+      } catch {
+        // ignore storage failures
+      }
+    }
+
     clear();
     router.push(menu);
   };

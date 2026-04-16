@@ -86,6 +86,9 @@ export type HallData = {
 
 const STORAGE_KEY = "giotto.hall.data.v1";
 const UPDATE_EVENT = "giotto:hall-data-updated";
+const HALL_API = "/api/hall";
+const HALL_RESET_API = "/api/hall/reset";
+const STATE_EVENTS_API = "/api/state/events";
 
 const TABLE_STATUSES: ServiceTableStatus[] = ["free", "occupied", "waiting", "ordered", "bill"];
 
@@ -465,17 +468,57 @@ export function readHallData(): HallData {
   }
 }
 
+async function fetchHallDataFromApi(): Promise<HallData | null> {
+  try {
+    const response = await fetch(HALL_API, { cache: "no-store" });
+    if (!response.ok) return null;
+    const raw = await response.json();
+    return normalizeHallData(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function pushHallDataToApi(data: HallData): Promise<void> {
+  try {
+    await fetch(HALL_API, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      cache: "no-store",
+    });
+  } catch {
+    // ignore temporary sync failures
+  }
+}
+
 export function writeHallData(data: HallData): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
+  void pushHallDataToApi(data);
 }
 
 export function useHallData() {
   const [data, setData] = useState<HallData>(DEFAULT_DATA);
 
+  const pullFromApi = useCallback(async () => {
+    const remote = await fetchHallDataFromApi();
+    if (!remote) return;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+      window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
+    }
+    setData(remote);
+  }, []);
+
   useEffect(() => {
     setData(readHallData());
+    void pullFromApi();
+
+    const poll = window.setInterval(() => {
+      void pullFromApi();
+    }, 2500);
 
     const sync = () => {
       setData(readHallData());
@@ -484,11 +527,22 @@ export function useHallData() {
     window.addEventListener("storage", sync);
     window.addEventListener(UPDATE_EVENT, sync as EventListener);
 
+    const events = new EventSource(STATE_EVENTS_API);
+    const onServerUpdate = () => {
+      void pullFromApi();
+    };
+    events.addEventListener("hall:updated", onServerUpdate);
+    events.addEventListener("state:reset", onServerUpdate);
+
     return () => {
+      window.clearInterval(poll);
       window.removeEventListener("storage", sync);
       window.removeEventListener(UPDATE_EVENT, sync as EventListener);
+      events.removeEventListener("hall:updated", onServerUpdate);
+      events.removeEventListener("state:reset", onServerUpdate);
+      events.close();
     };
-  }, []);
+  }, [pullFromApi]);
 
   const updateData = useCallback((updater: (current: HallData) => HallData) => {
     const next = updater(readHallData());
@@ -499,7 +553,12 @@ export function useHallData() {
   const resetData = useCallback(() => {
     writeHallData(DEFAULT_DATA);
     setData(DEFAULT_DATA);
-  }, []);
+    void fetch(HALL_RESET_API, { method: "POST", cache: "no-store" }).then(() => {
+      void pullFromApi();
+    }).catch(() => {
+      // ignore temporary sync failures
+    });
+  }, [pullFromApi]);
 
   return useMemo(() => ({ data, updateData, resetData }), [data, resetData, updateData]);
 }

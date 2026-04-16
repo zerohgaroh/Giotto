@@ -1,1 +1,8 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/manager/page": "app/manager/page.js",
+  "/waiter/page": "app/waiter/page.js",
+  "/guest/page": "app/guest/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/login/page": "app/login/page.js"
+}

@@ -1,0 +1,8 @@
+
+> giotto@0.1.0 dev
+> NEXT_DIST_DIR=.next-dev next dev -p 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
