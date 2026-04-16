@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import { promises as fs } from "fs";
 import path from "path";
 import { DEFAULT_RESTAURANT_PROFILE, DISHES, MENU_CATEGORIES } from "@/lib/menu-data";
+import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
 import { WAITER_SEED_ACCOUNTS } from "@/lib/waiter-data";
 import type { RestaurantData } from "@/lib/types";
 
@@ -17,6 +18,14 @@ type WaiterProfile = {
   password: string;
   active: boolean;
   tableIds: number[];
+};
+
+type ManagerProfile = {
+  id: string;
+  name: string;
+  login: string;
+  password: string;
+  active: boolean;
 };
 
 type HallTable = {
@@ -76,14 +85,36 @@ type HallSettings = {
   managerSoundEnabled: boolean;
 };
 
+type TableCooldownMap = Record<string, Partial<Record<ServiceRequestType, number>>>;
+
+type Review = {
+  tableId: number;
+  waiterId?: string;
+  rating: number;
+  comment?: string;
+  createdAt: number;
+};
+
+type ReviewPrompt = {
+  tableId: number;
+  waiterId?: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
 type HallData = {
   waiters: WaiterProfile[];
+  managers?: ManagerProfile[];
   tables: HallTable[];
   requests: ServiceRequest[];
   billLines: BillLine[];
   notesByTable: Record<string, string>;
   floorPlan: FloorPlan;
   settings: HallSettings;
+  requestCooldowns?: TableCooldownMap;
+  reviews?: Review[];
+  reviewPrompts?: Record<string, ReviewPrompt>;
+  notesBySession?: Record<string, string>;
 };
 
 type PersistedState = {
@@ -146,6 +177,13 @@ function buildDefaultHallData(): HallData {
     active: account.active,
     tableIds: account.tableIds,
   }));
+  const managers: ManagerProfile[] = MANAGER_SEED_ACCOUNTS.map((account) => ({
+    id: account.id,
+    name: account.name,
+    login: account.login,
+    password: account.password,
+    active: account.active,
+  }));
 
   const tableAssignments = new Map<number, string>();
   for (const waiter of waiters) {
@@ -173,6 +211,7 @@ function buildDefaultHallData(): HallData {
 
   return {
     waiters,
+    managers,
     tables,
     requests: [
       {
@@ -228,6 +267,10 @@ function buildDefaultHallData(): HallData {
     },
     floorPlan: buildDefaultFloorPlan(tables),
     settings: { managerSoundEnabled: true },
+    requestCooldowns: {},
+    reviews: [],
+    reviewPrompts: {},
+    notesBySession: {},
   };
 }
 
@@ -268,12 +311,31 @@ async function readState(): Promise<PersistedState> {
       await fs.writeFile(STATE_FILE, JSON.stringify(fallback), "utf-8");
       return fallback;
     }
-    return {
+    const hall = parsed.hall as HallData;
+    let shouldWrite = false;
+    if (!Array.isArray(hall.managers) || hall.managers.length === 0) {
+      hall.managers = MANAGER_SEED_ACCOUNTS.map((account) => ({
+        id: account.id,
+        name: account.name,
+        login: account.login,
+        password: account.password,
+        active: account.active,
+      }));
+      shouldWrite = true;
+    }
+
+    const normalized: PersistedState = {
       revision: Number(parsed.revision ?? 1),
       updatedAt: Number(parsed.updatedAt ?? Date.now()),
-      hall: parsed.hall as HallData,
+      hall,
       restaurant: parsed.restaurant as RestaurantData,
     };
+
+    if (shouldWrite) {
+      await fs.writeFile(STATE_FILE, JSON.stringify(normalized), "utf-8");
+    }
+
+    return normalized;
   } catch {
     const fallback = buildDefaultState();
     await fs.writeFile(STATE_FILE, JSON.stringify(fallback), "utf-8");

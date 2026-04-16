@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { BellRing } from "lucide-react";
-import { readHallData, writeHallData } from "@/lib/service-store";
+import type { CooldownState } from "@/lib/waiter-backend/types";
 import { tableLabelFromId } from "@/lib/table-label";
 
 type Props = { tableId: string };
@@ -35,60 +35,39 @@ export function WaiterTimerPage({ tableId }: Props) {
   const label = tableLabelFromId(tableId);
   const base = `/table/${tableId}`;
   const actionLabel = isBill ? "Принести счёт" : "Позвать официанта";
-  const timerStorageKey = `giotto:waiter:${tableId}:${isBill ? "bill" : "waiter"}`;
-  const [requested, setRequested] = useState(false);
-  const [remaining, setRemaining] = useState(WAIT_SEC);
+  const requestType = isBill ? "bill" : "waiter";
+
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [expiresAt, setExpiresAt] = useState(0);
+  const [timerError, setTimerError] = useState("");
   const timerDetailsRef = useRef<HTMLDivElement>(null);
-  const [timerDetailsHeight, setTimerDetailsHeight] = useState<number | null>(
-    null,
-  );
+  const [timerDetailsHeight, setTimerDetailsHeight] = useState<number | null>(null);
+
+  const remaining = Math.max(0, Math.ceil((expiresAt - nowMs) / 1000));
+  const requested = remaining > 0;
 
   useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const syncCooldown = useCallback(async () => {
     try {
-      const raw = window.localStorage.getItem(timerStorageKey);
-      if (!raw) {
-        setRequested(false);
-        setRemaining(WAIT_SEC);
-        return;
-      }
-      const expiresAt = Number(raw);
-      if (!Number.isFinite(expiresAt)) {
-        window.localStorage.removeItem(timerStorageKey);
-        setRequested(false);
-        setRemaining(WAIT_SEC);
-        return;
-      }
-      const secondsLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      if (secondsLeft > 0) {
-        setRequested(true);
-        setRemaining(secondsLeft);
-      } else {
-        window.localStorage.removeItem(timerStorageKey);
-        setRequested(false);
-        setRemaining(WAIT_SEC);
-      }
+      const response = await fetch(`/api/table/${tableId}/request?type=${requestType}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error("cooldown sync failed");
+      const payload = (await response.json()) as { cooldown?: CooldownState };
+      setExpiresAt(payload.cooldown?.availableAt ?? 0);
+      setTimerError("");
     } catch {
-      setRequested(false);
-      setRemaining(WAIT_SEC);
+      setTimerError("Не удалось проверить состояние вызова.");
     }
-  }, [timerStorageKey]);
+  }, [requestType, tableId]);
 
   useEffect(() => {
-    if (!requested || remaining <= 0) return;
-    const id = window.setTimeout(() => {
-      setRemaining((current) => Math.max(current - 1, 0));
-    }, 1000);
-    return () => window.clearTimeout(id);
-  }, [requested, remaining]);
-
-  useEffect(() => {
-    if (!requested || remaining > 0) return;
-    try {
-      window.localStorage.removeItem(timerStorageKey);
-    } catch {
-      // ignore storage failures
-    }
-  }, [requested, remaining, timerStorageKey]);
+    void syncCooldown();
+  }, [syncCooldown]);
 
   useLayoutEffect(() => {
     const node = timerDetailsRef.current;
@@ -102,71 +81,33 @@ export function WaiterTimerPage({ tableId }: Props) {
     setTimerDetailsHeight(node.scrollHeight);
   }, [requested]);
 
-  const progress = useMemo(() => remaining / WAIT_SEC, [remaining]);
+  const progress = useMemo(() => {
+    if (!requested) return 0;
+    return Math.min(1, Math.max(0, remaining / WAIT_SEC));
+  }, [remaining, requested]);
 
   const dashOffset = CIRC * (1 - progress);
-  const canRecall = requested && remaining === 0;
+  const canRecall = remaining === 0;
   const ringSize = "h-[min(68vmin,15rem)] w-[min(68vmin,15rem)]";
-  const numericTableId = useMemo(() => {
-    let normalized = tableId;
-    try {
-      normalized = decodeURIComponent(tableId);
-    } catch {
-      normalized = tableId;
-    }
-    normalized = normalized.trim();
-    const parsed = Number(normalized);
-    if (!Number.isFinite(parsed) || parsed <= 0) return null;
-    return parsed;
-  }, [tableId]);
 
-  const sendRequest = useCallback(() => {
-    const expiresAt = Date.now() + WAIT_SEC * 1000;
-    setRequested(true);
-    setRemaining(WAIT_SEC);
+  const sendRequest = useCallback(async () => {
     try {
-      window.localStorage.setItem(timerStorageKey, String(expiresAt));
-    } catch {
-      // ignore storage failures
-    }
-
-    if (!numericTableId) return;
-    try {
-      const createdAt = Date.now();
-      const requestType = isBill ? "bill" : "waiter";
-      const reason = isBill ? "Гости готовы оплатить" : "Гости вызывают официанта";
-      const current = readHallData();
-      const alreadyActive = current.requests.some(
-        (request) =>
-          request.tableId === numericTableId &&
-          request.type === requestType &&
-          !request.resolvedAt,
-      );
-
-      writeHallData({
-        ...current,
-        tables: current.tables.map((table) =>
-          table.tableId === numericTableId
-            ? { ...table, status: isBill ? "bill" : "waiting" }
-            : table,
-        ),
-        requests: alreadyActive
-          ? current.requests
-          : [
-              ...current.requests,
-              {
-                id: `rq-${requestType}-${numericTableId}-${createdAt}`,
-                tableId: numericTableId,
-                type: requestType,
-                reason,
-                createdAt,
-              },
-            ],
+      const response = await fetch(`/api/table/${tableId}/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: requestType }),
       });
+      if (!response.ok) throw new Error("request failed");
+      const payload = (await response.json()) as {
+        cooldown?: CooldownState;
+      };
+      setExpiresAt(payload.cooldown?.availableAt ?? 0);
+      setNowMs(Date.now());
+      setTimerError("");
     } catch {
-      // ignore storage failures
+      setTimerError("Не удалось отправить вызов. Попробуйте ещё раз.");
     }
-  }, [isBill, numericTableId, timerStorageKey]);
+  }, [requestType, tableId]);
 
   return (
     <div
@@ -296,10 +237,18 @@ export function WaiterTimerPage({ tableId }: Props) {
         </div>
       </section>
 
+      {timerError ? (
+        <div className="mt-3 rounded-lg border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-xs text-[#9a4f1e]">
+          {timerError}
+        </div>
+      ) : null}
+
       <div className="mx-auto mt-auto flex w-full max-w-xs flex-col gap-3 pt-[clamp(2rem,8vh,3.5rem)]">
         <button
           type="button"
-          onClick={sendRequest}
+          onClick={() => {
+            void sendRequest();
+          }}
           disabled={requested && !canRecall}
           className="motion-action min-h-[3.5rem] w-full rounded-[1.45rem] border-2 border-giotto-navy bg-giotto-navy font-sans text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-lift transition hover:bg-giotto-navy-deep active:scale-[0.99] motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-[#a7b2c8] disabled:bg-[#a7b2c8] disabled:text-white/80 disabled:shadow-none disabled:hover:bg-[#a7b2c8]"
         >

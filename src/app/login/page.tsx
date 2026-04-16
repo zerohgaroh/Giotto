@@ -1,11 +1,23 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { GiottoLogo } from "@/components/guest/GiottoLogo";
-import { MANAGER_COOKIE } from "@/lib/manager-auth";
+import {
+  MANAGER_COOKIE,
+  issueManagerToken,
+  managerCookieOptions,
+  parseManagerToken,
+} from "@/lib/manager-auth";
+import {
+  authenticateManagerCredentials,
+  authenticateWaiterCredentials,
+  findManagerById,
+  findWaiterById,
+} from "@/lib/waiter-backend/backend";
 import {
   WAITER_COOKIE,
-  findWaiterByCredentials,
-  findWaiterById,
+  issueWaiterToken,
+  parseWaiterToken,
+  waiterCookieOptions,
 } from "@/lib/waiter-auth";
 
 async function loginAction(formData: FormData) {
@@ -16,42 +28,19 @@ async function loginAction(formData: FormData) {
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  const waiter = findWaiterByCredentials(login, password);
+  const waiter = await authenticateWaiterCredentials(login, password);
   if (waiter) {
-    cookies().set(WAITER_COOKIE, waiter.id, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 12,
-    });
+    cookies().set(WAITER_COOKIE, issueWaiterToken(waiter.id), waiterCookieOptions());
     cookies().delete(MANAGER_COOKIE);
     redirect("/waiter");
   }
 
-  const expectedEmail = (process.env.GIOTTO_MANAGER_EMAIL ?? "manager@giotto.local")
-    .trim()
-    .toLowerCase();
-  const expectedLogin = (process.env.GIOTTO_MANAGER_LOGIN ?? "manager")
-    .trim()
-    .toLowerCase();
-  const expectedPassword = process.env.GIOTTO_MANAGER_PASSWORD ?? "manager123";
-
-  const managerLogins = new Set(
-    [expectedEmail, expectedLogin].filter((value) => value.length > 0),
-  );
-
-  if (!managerLogins.has(login) || password !== expectedPassword) {
+  const manager = await authenticateManagerCredentials(login, password);
+  if (!manager) {
     redirect("/login?error=invalid");
   }
 
-  cookies().set(MANAGER_COOKIE, "1", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 12,
-  });
+  cookies().set(MANAGER_COOKIE, issueManagerToken(manager.id), managerCookieOptions());
   cookies().delete(WAITER_COOKIE);
 
   redirect("/manager");
@@ -63,15 +52,21 @@ type LoginPageProps = {
   };
 };
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const managerSession = cookies().get(MANAGER_COOKIE)?.value === "1";
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const managerToken = cookies().get(MANAGER_COOKIE)?.value;
+  const managerSession = parseManagerToken(managerToken);
   if (managerSession) {
-    redirect("/manager");
+    const manager = await findManagerById(managerSession.managerId);
+    if (manager) {
+      redirect("/manager");
+    }
   }
 
-  const waiterId = cookies().get(WAITER_COOKIE)?.value;
-  if (waiterId && findWaiterById(waiterId)) {
-    redirect("/waiter");
+  const waiterToken = cookies().get(WAITER_COOKIE)?.value;
+  const waiterSession = parseWaiterToken(waiterToken);
+  if (waiterSession) {
+    const waiter = await findWaiterById(waiterSession.waiterId);
+    if (waiter) redirect("/waiter");
   }
 
   const isInvalidCredentials = searchParams?.error === "invalid";

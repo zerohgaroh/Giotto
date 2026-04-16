@@ -1,13 +1,12 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { WaiterDashboardPage } from "@/components/waiter/WaiterDashboardPage";
-import { WAITER_COOKIE, findWaiterById } from "@/lib/waiter-auth";
+import { getWaiterSessionFromCookies } from "@/lib/waiter-backend/session";
 
-export default function WaiterPage() {
-  const waiterId = cookies().get(WAITER_COOKIE)?.value;
-  if (!waiterId || !findWaiterById(waiterId)) {
+export default async function WaiterPage() {
+  const session = await getWaiterSessionFromCookies();
+  if (!session) {
     redirect("/login");
   }
 
-  return <WaiterDashboardPage waiterId={waiterId} />;
+  return <WaiterDashboardPage waiterId={session.waiterId} />;
 }

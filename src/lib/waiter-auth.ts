@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import type { AuthSession } from "@/lib/waiter-backend/types";
+import type { WaiterAuthSession } from "@/lib/waiter-backend/types";
 
 export const WAITER_COOKIE = "giotto_waiter_session";
 const DEFAULT_TTL_SECONDS = 60 * 60 * 12;
@@ -46,7 +46,7 @@ export function issueWaiterToken(waiterId: string, ttlSeconds: number = DEFAULT_
   return `${header}.${body}.${signature}`;
 }
 
-export function parseWaiterToken(token: string | undefined): AuthSession | null {
+export function parseWaiterToken(token: string | undefined): WaiterAuthSession | null {
   if (!token) return null;
   const [header, payload, signature] = token.split(".");
   if (!header || !payload || !signature) return null;

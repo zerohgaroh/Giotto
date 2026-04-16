@@ -14,6 +14,14 @@ export type WaiterProfile = {
   tableIds: number[];
 };
 
+export type ManagerProfile = {
+  id: string;
+  name: string;
+  login: string;
+  password: string;
+  active: boolean;
+};
+
 export type HallTable = {
   tableId: number;
   status: ServiceTableStatus;
@@ -96,6 +104,7 @@ export type TableCooldownMap = Record<string, Partial<Record<ServiceRequestType,
 
 export type HallData = {
   waiters: WaiterProfile[];
+  managers?: ManagerProfile[];
   tables: HallTable[];
   requests: ServiceRequest[];
   billLines: BillLine[];
@@ -108,9 +117,15 @@ export type HallData = {
   notesBySession?: Record<string, string>;
 };
 
-export type AuthSession = {
+export type WaiterAuthSession = {
   role: "waiter";
   waiterId: string;
+  expiresAt: number;
+};
+
+export type ManagerAuthSession = {
+  role: "manager";
+  managerId: string;
   expiresAt: number;
 };
 

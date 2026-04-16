@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import { BellRing, LogOut } from "lucide-react";
 import { GiottoLogo } from "@/components/guest/GiottoLogo";
-import { formatDurationFrom, useHallData } from "@/lib/service-store";
+import { formatDurationFrom } from "@/lib/service-store";
+import type { WaiterTablesResponse } from "@/lib/waiter-backend/types";
 import { REQUEST_META, STATUS_META } from "./waiter-ui";
 
 type Props = {
@@ -13,8 +14,27 @@ type Props = {
 };
 
 export function WaiterDashboardPage({ waiterId }: Props) {
-  const { data } = useHallData();
   const [now, setNow] = useState(0);
+  const [data, setData] = useState<WaiterTablesResponse | null>(null);
+  const [loadError, setLoadError] = useState<string>("");
+
+  const pull = useCallback(async () => {
+    try {
+      const response = await fetch("/api/waiter/me/tables", { cache: "no-store" });
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Не удалось загрузить столы");
+      }
+      const next = (await response.json()) as WaiterTablesResponse;
+      setData(next);
+      setLoadError("");
+    } catch {
+      setLoadError("Не удалось синхронизировать столы. Проверьте соединение.");
+    }
+  }, []);
 
   useEffect(() => {
     setNow(Date.now());
@@ -22,27 +42,38 @@ export function WaiterDashboardPage({ waiterId }: Props) {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    void pull();
+
+    const poll = window.setInterval(() => {
+      void pull();
+    }, 3000);
+
+    const events = new EventSource("/api/realtime/stream");
+    const onEvent = () => {
+      void pull();
+    };
+
+    events.addEventListener("waiter:called", onEvent);
+    events.addEventListener("bill:requested", onEvent);
+    events.addEventListener("waiter:acknowledged", onEvent);
+    events.addEventListener("table:status_changed", onEvent);
+
+    return () => {
+      window.clearInterval(poll);
+      events.removeEventListener("waiter:called", onEvent);
+      events.removeEventListener("bill:requested", onEvent);
+      events.removeEventListener("waiter:acknowledged", onEvent);
+      events.removeEventListener("table:status_changed", onEvent);
+      events.close();
+    };
+  }, [pull]);
+
   const durationLabel = (startMs: number) =>
     now > 0 ? formatDurationFrom(startMs, now) : "00:00";
 
-  const waiter = useMemo(
-    () => data.waiters.find((candidate) => candidate.id === waiterId),
-    [data.waiters, waiterId],
-  );
-
-  const myTables = useMemo(() => {
-    const assigned = data.tables
-      .filter((table) => table.assignedWaiterId === waiterId)
-      .sort((a, b) => a.tableId - b.tableId);
-
-    return assigned.map((table) => {
-      const activeRequest = data.requests
-        .filter((request) => request.tableId === table.tableId && !request.resolvedAt)
-        .sort((a, b) => b.createdAt - a.createdAt)[0];
-      return { ...table, activeRequest };
-    });
-  }, [data.requests, data.tables, waiterId]);
-
+  const waiterName = data?.waiter.name ?? waiterId ?? "Официант";
+  const myTables = data?.tables ?? [];
   const activeCallsCount = myTables.filter((table) => !!table.activeRequest).length;
 
   return (
@@ -58,7 +89,7 @@ export function WaiterDashboardPage({ waiterId }: Props) {
               Giotto Waiter
             </p>
             <p className="truncate text-[15px] font-semibold text-giotto-navy-deep">
-              {waiter?.name ?? "Официант"}
+              {waiterName}
             </p>
           </div>
           <Link
@@ -80,6 +111,12 @@ export function WaiterDashboardPage({ waiterId }: Props) {
             Вызовы: {activeCallsCount}
           </span>
         </div>
+
+        {loadError ? (
+          <div className="motion-surface mb-3 rounded-[1rem] border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-xs text-[#9a4f1e]">
+            {loadError}
+          </div>
+        ) : null}
 
         {myTables.length === 0 ? (
           <div className="motion-surface rounded-[1.15rem] border border-giotto-line bg-white/90 p-5 text-center text-sm text-giotto-muted">
@@ -110,7 +147,7 @@ export function WaiterDashboardPage({ waiterId }: Props) {
                     </span>
                   </div>
 
-                  <p className="mt-2 text-[12px] text-giotto-muted">{waiter?.name ?? "Официант"}</p>
+                  <p className="mt-2 text-[12px] text-giotto-muted">{waiterName}</p>
                   <p className="mt-0.5 font-mono text-[12px] font-semibold text-giotto-navy-deep">
                     ⏱ {durationLabel(table.guestStartedAt)}
                   </p>

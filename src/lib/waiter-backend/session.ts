@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { WAITER_COOKIE, parseWaiterToken } from "@/lib/waiter-auth";
 import { findWaiterById } from "./backend";
-import type { AuthSession } from "./types";
+import type { WaiterAuthSession } from "./types";
 
-export async function getWaiterSessionFromCookies(): Promise<AuthSession | null> {
+export async function getWaiterSessionFromCookies(): Promise<WaiterAuthSession | null> {
   const token = cookies().get(WAITER_COOKIE)?.value;
   const session = parseWaiterToken(token);
   if (!session) return null;
@@ -14,7 +14,7 @@ export async function getWaiterSessionFromCookies(): Promise<AuthSession | null>
   return session;
 }
 
-export async function requireWaiterSession(): Promise<AuthSession> {
+export async function requireWaiterSession(): Promise<WaiterAuthSession> {
   const session = await getWaiterSessionFromCookies();
   if (!session) {
     throw new Error("UNAUTHORIZED_WAITER");

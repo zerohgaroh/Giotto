@@ -1,33 +1,51 @@
-# Giotto — гость за столом
+# Giotto NFC Platform
 
-Next.js 14: хаб стола после NFC, меню с корзиной, вызов официанта с таймером, жалоба, Wi-Fi (демо).
+Next.js 14 приложение для гостя, официанта и менеджера с server-first BFF для waiter flows.
+
+## Что реализовано в waiter v1
+- Полный цикл официанта: вызов гостя -> `Принято — иду` -> `Добавить в счёт` -> `Все обслужил`.
+- Синхронизация с гостем в realtime (SSE): вызовы, добавления в счёт, запрос отзыва.
+- Гостевой cooldown (120с) перенесён на сервер.
+- Отзыв гостя после `Все обслужил`: модалка на гостевом экране, автоскрытие 60с, сохранение в state.
+- BFF-архитектура с fallback:
+  - Remote beta adapter (`GIOTTO_BETA_SERVER_URL`)
+  - Demo adapter (локальный state)
 
 ## Запуск
-
 ```bash
 npm install
 npm run dev
 ```
 
-- Сайт: **`http://localhost:3000`** — обязательно с портом **`:3000`**. Только `http://localhost` без порта часто открывает не Next -> «голый» HTML без Tailwind.
-- Демо-стол: `http://localhost:3000/table/demo` (замените `demo` на номер стола из NFC)
+Сайт: `http://localhost:3000`
 
-## Маршруты
+## Environment
+- `GIOTTO_BETA_SERVER_URL` (default: `http://localhost:3000`)
+- `GIOTTO_FORCE_DEMO_BACKEND=1` — принудительно использовать локальный demo backend
+- `GIOTTO_DEMO_JWT_SECRET` — секрет подписи demo JWT
 
-| Путь | Экран |
-|------|--------|
-| `/table/<id>` | Хаб: меню, вызов, жалоба, счет, Wi-Fi |
-| `/table/<id>/menu` | Меню + нижняя панель «Корзина» / «Вызов» |
-| `/table/<id>/cart` | Корзина |
-| `/table/<id>/waiter` | Таймер вызова (`?intent=bill` — счет) |
-| `/table/<id>/complaint` | Жалоба |
-| `/waiter/login` | Вход официанта |
-| `/waiter` | Мои столы официанта |
-| `/waiter/tables/<id>` | Детали стола официанта |
-| `/waiter/tables/<id>/add-order` | Добавить заказ официантом |
+Примечание: логины/пароли официантов и менеджеров хранятся в `hall` state (DB слой), а не в env.
+
+## Основные маршруты
+- Гость:
+  - `/table/<id>`
+  - `/table/<id>/menu`
+  - `/table/<id>/cart`
+  - `/table/<id>/waiter`
+  - `/table/<id>/complaint`
+- Персонал:
+  - `/login`
+  - `/waiter`
+  - `/waiter/tables/<id>`
+  - `/waiter/tables/<id>/add-order`
+  - `/manager`
+
+## API и контракты
+Полная документация BFF-контрактов, realtime-событий и fallback-поведения:
+- [docs/waiter-bff.md](./docs/waiter-bff.md)
 
 ## Сборка
-
 ```bash
-npm run build && npm run start
+npm run build
+npm run start
 ```

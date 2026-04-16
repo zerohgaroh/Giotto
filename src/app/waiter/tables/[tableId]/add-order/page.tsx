@@ -1,15 +1,14 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { WaiterAddOrderPage } from "@/components/waiter/WaiterAddOrderPage";
-import { WAITER_COOKIE, findWaiterById } from "@/lib/waiter-auth";
+import { getWaiterSessionFromCookies } from "@/lib/waiter-backend/session";
 
 type Props = {
   params: { tableId: string };
 };
 
-export default function WaiterAddOrderRoute({ params }: Props) {
-  const waiterId = cookies().get(WAITER_COOKIE)?.value;
-  if (!waiterId || !findWaiterById(waiterId)) {
+export default async function WaiterAddOrderRoute({ params }: Props) {
+  const session = await getWaiterSessionFromCookies();
+  if (!session) {
     redirect("/login");
   }
 
@@ -18,5 +17,5 @@ export default function WaiterAddOrderRoute({ params }: Props) {
     redirect("/waiter");
   }
 
-  return <WaiterAddOrderPage waiterId={waiterId} tableId={tableId} />;
+  return <WaiterAddOrderPage tableId={tableId} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MANAGER_SEED_ACCOUNTS } from "./manager-data";
 import { WAITER_SEED_ACCOUNTS } from "./waiter-data";
 
 export type ServiceTableStatus = "free" | "occupied" | "waiting" | "ordered" | "bill";
@@ -15,6 +16,14 @@ export type WaiterProfile = {
   password: string;
   active: boolean;
   tableIds: number[];
+};
+
+export type ManagerProfile = {
+  id: string;
+  name: string;
+  login: string;
+  password: string;
+  active: boolean;
 };
 
 export type HallTable = {
@@ -74,14 +83,36 @@ export type HallSettings = {
   managerSoundEnabled: boolean;
 };
 
+export type TableCooldownMap = Record<string, Partial<Record<ServiceRequestType, number>>>;
+
+export type Review = {
+  tableId: number;
+  waiterId?: string;
+  rating: number;
+  comment?: string;
+  createdAt: number;
+};
+
+export type ReviewPrompt = {
+  tableId: number;
+  waiterId?: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
 export type HallData = {
   waiters: WaiterProfile[];
+  managers?: ManagerProfile[];
   tables: HallTable[];
   requests: ServiceRequest[];
   billLines: BillLine[];
   notesByTable: Record<string, string>;
   floorPlan: FloorPlan;
   settings: HallSettings;
+  requestCooldowns?: TableCooldownMap;
+  reviews?: Review[];
+  reviewPrompts?: Record<string, ReviewPrompt>;
+  notesBySession?: Record<string, string>;
 };
 
 const STORAGE_KEY = "giotto.hall.data.v1";
@@ -170,6 +201,13 @@ function buildDefaultHallData(): HallData {
     password: account.password,
     active: account.active,
     tableIds: account.tableIds,
+  }));
+  const managers: ManagerProfile[] = MANAGER_SEED_ACCOUNTS.map((account) => ({
+    id: account.id,
+    name: account.name,
+    login: account.login,
+    password: account.password,
+    active: account.active,
   }));
 
   const tableAssignments = new Map<number, string>();
@@ -281,6 +319,7 @@ function buildDefaultHallData(): HallData {
 
   return {
     waiters: synced.waiters,
+    managers,
     tables: synced.tables,
     requests,
     billLines,
@@ -292,6 +331,10 @@ function buildDefaultHallData(): HallData {
     settings: {
       managerSoundEnabled: true,
     },
+    requestCooldowns: {},
+    reviews: [],
+    reviewPrompts: {},
+    notesBySession: {},
   };
 }
 
@@ -368,6 +411,18 @@ function normalizeHallData(input: unknown): HallData {
         }))
         .filter((waiter) => waiter.id && waiter.name)
     : DEFAULT_DATA.waiters;
+
+  const managers: ManagerProfile[] = Array.isArray(raw.managers)
+    ? raw.managers
+        .map((manager) => ({
+          id: String(manager.id ?? ""),
+          name: String(manager.name ?? ""),
+          login: String(manager.login ?? ""),
+          password: String(manager.password ?? ""),
+          active: manager.active !== false,
+        }))
+        .filter((manager) => manager.id && manager.name && manager.login)
+    : DEFAULT_DATA.managers ?? [];
 
   const tables: HallTable[] = Array.isArray(raw.tables)
     ? raw.tables
@@ -446,14 +501,68 @@ function normalizeHallData(input: unknown): HallData {
         : DEFAULT_DATA.settings.managerSoundEnabled,
   };
 
+  const requestCooldowns: TableCooldownMap = {};
+  if (raw.requestCooldowns && typeof raw.requestCooldowns === "object") {
+    for (const [tableKey, rawCooldown] of Object.entries(raw.requestCooldowns)) {
+      if (!rawCooldown || typeof rawCooldown !== "object") continue;
+      const next: Partial<Record<ServiceRequestType, number>> = {};
+      if (typeof rawCooldown.waiter === "number" && Number.isFinite(rawCooldown.waiter)) {
+        next.waiter = rawCooldown.waiter;
+      }
+      if (typeof rawCooldown.bill === "number" && Number.isFinite(rawCooldown.bill)) {
+        next.bill = rawCooldown.bill;
+      }
+      requestCooldowns[String(tableKey)] = next;
+    }
+  }
+
+  const reviews: Review[] = Array.isArray(raw.reviews)
+    ? raw.reviews
+        .map((review) => ({
+          tableId: Number(review.tableId),
+          waiterId: review.waiterId ? String(review.waiterId) : undefined,
+          rating: Math.max(1, Math.min(5, Math.floor(Number(review.rating ?? 5)))),
+          comment: review.comment ? String(review.comment) : undefined,
+          createdAt: Number(review.createdAt ?? Date.now()),
+        }))
+        .filter((review) => Number.isFinite(review.tableId) && review.tableId > 0)
+    : [];
+
+  const reviewPrompts: Record<string, ReviewPrompt> = {};
+  if (raw.reviewPrompts && typeof raw.reviewPrompts === "object") {
+    for (const [tableKey, prompt] of Object.entries(raw.reviewPrompts)) {
+      if (!prompt || typeof prompt !== "object") continue;
+      const tableId = Number(prompt.tableId ?? tableKey);
+      if (!Number.isFinite(tableId) || tableId <= 0) continue;
+      reviewPrompts[String(tableKey)] = {
+        tableId,
+        waiterId: prompt.waiterId ? String(prompt.waiterId) : undefined,
+        createdAt: Number(prompt.createdAt ?? Date.now()),
+        expiresAt: Number(prompt.expiresAt ?? Date.now() + 60_000),
+      };
+    }
+  }
+
+  const notesBySession: Record<string, string> = {};
+  if (raw.notesBySession && typeof raw.notesBySession === "object") {
+    for (const [sessionKey, value] of Object.entries(raw.notesBySession)) {
+      notesBySession[String(sessionKey)] = String(value ?? "");
+    }
+  }
+
   return {
     waiters: synced.waiters,
+    managers,
     tables: synced.tables,
     requests,
     billLines,
     notesByTable,
     floorPlan,
     settings,
+    requestCooldowns,
+    reviews,
+    reviewPrompts,
+    notesBySession,
   };
 }
 

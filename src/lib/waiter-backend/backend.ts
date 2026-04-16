@@ -1,4 +1,5 @@
 import type { RestaurantData } from "@/lib/types";
+import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
 import {
   getHallData as getLocalHallData,
   getRestaurantData as getLocalRestaurantData,
@@ -12,9 +13,9 @@ import type {
   CooldownState,
   HallData,
   HallTable,
+  ManagerProfile,
   RealtimeEvent,
   Review,
-  ReviewPrompt,
   ServiceRequest,
   ServiceRequestType,
   WaiterBackendSnapshot,
@@ -81,6 +82,12 @@ function waiterExists(hall: HallData, waiterId: string): WaiterProfile {
   return waiter;
 }
 
+function managerExists(hall: HallData, managerId: string): ManagerProfile {
+  const manager = (hall.managers ?? []).find((item) => item.id === managerId && item.active);
+  if (!manager) throw new ApiError(401, "Сессия менеджера недействительна");
+  return manager;
+}
+
 function ensureAssignedTable(hall: HallData, waiterId: string, tableId: number): HallTable {
   const table = tableExists(hall, tableId);
   if (table.assignedWaiterId !== waiterId) {
@@ -90,6 +97,15 @@ function ensureAssignedTable(hall: HallData, waiterId: string, tableId: number):
 }
 
 function ensureExtendedState(hall: HallData): HallData {
+  if (!hall.managers || hall.managers.length === 0) {
+    hall.managers = MANAGER_SEED_ACCOUNTS.map((account) => ({
+      id: account.id,
+      name: account.name,
+      login: account.login,
+      password: account.password,
+      active: account.active,
+    }));
+  }
   if (!hall.requestCooldowns) hall.requestCooldowns = {};
   if (!hall.reviewPrompts) hall.reviewPrompts = {};
   if (!hall.reviews) hall.reviews = [];
@@ -195,7 +211,7 @@ function toWaiterTableDetail(hall: HallData, waiterId: string, tableId: number):
   };
 }
 
-function emitEvents(events: RealtimeEvent[]) {
+function emitEvents(events: RealtimeEventInput[]) {
   for (const event of events) {
     publishRealtimeEvent(event);
   }
@@ -249,7 +265,13 @@ async function requestRemote<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    if (response.status >= 500 || response.status === 404 || response.status === 405) {
+    if (
+      response.status >= 500 ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status === 404 ||
+      response.status === 405
+    ) {
       throw new BackendUnavailableError(`Удаленный сервер недоступен (${response.status})`);
     }
     throw new ApiError(response.status, `Ошибка удаленного сервера (${response.status})`);
@@ -363,12 +385,45 @@ export async function authenticateWaiterCredentials(
   });
 }
 
+export async function authenticateManagerCredentials(
+  login: string,
+  password: string,
+): Promise<ManagerProfile | null> {
+  const normalizedLogin = login.trim().toLowerCase();
+  if (normalizedLogin.length === 0 || password.length === 0) return null;
+
+  return withBackend(async (backend) => {
+    const hall = ensureExtendedState(await backend.getHallData());
+    return (
+      (hall.managers ?? []).find(
+        (manager) =>
+          manager.active &&
+          manager.login.trim().toLowerCase() === normalizedLogin &&
+          manager.password === password,
+      ) ?? null
+    );
+  });
+}
+
 export async function findWaiterById(waiterId: string): Promise<WaiterProfile | null> {
   if (!waiterId) return null;
 
   return withBackend(async (backend) => {
     const hall = ensureExtendedState(await backend.getHallData());
     return hall.waiters.find((waiter) => waiter.id === waiterId && waiter.active) ?? null;
+  });
+}
+
+export async function findManagerById(managerId: string): Promise<ManagerProfile | null> {
+  if (!managerId) return null;
+
+  return withBackend(async (backend) => {
+    const hall = ensureExtendedState(await backend.getHallData());
+    try {
+      return managerExists(hall, managerId);
+    } catch {
+      return null;
+    }
   });
 }
 
@@ -435,7 +490,7 @@ export async function acknowledgeWaiterRequest(params: {
 
     await commitHall(backend, hall);
 
-    const events: RealtimeEvent[] = [
+    const events: RealtimeEventInput[] = [
       {
         type: "waiter:acknowledged",
         tableId,
@@ -517,7 +572,7 @@ export async function addWaiterOrder(params: {
     await commitHall(backend, hall);
 
     const totalAmount = nextLines.reduce((sum, line) => sum + line.qty * line.price, 0);
-    const events: RealtimeEvent[] = [
+    const events: RealtimeEventInput[] = [
       {
         type: "order:added_by_waiter",
         tableId,
@@ -554,7 +609,7 @@ export async function markWaiterDone(params: {
 
   return withBackend(async (backend) => {
     const hall = ensureExtendedState(await backend.getHallData());
-    const table = ensureAssignedTable(hall, params.waiterId, tableId);
+    ensureAssignedTable(hall, params.waiterId, tableId);
 
     const now = Date.now();
     const expiresAt = now + REVIEW_PROMPT_TTL_MS;
@@ -686,7 +741,7 @@ export async function createGuestRequest(params: {
 
     await commitHall(backend, hall);
 
-    const events: RealtimeEvent[] = [
+    const events: RealtimeEventInput[] = [
       {
         type: params.type === "bill" ? "bill:requested" : "waiter:called",
         tableId,
@@ -811,3 +866,5 @@ export async function getWaiterSnapshot(waiterId: string) {
     return { waiter, kind: backend.kind };
   });
 }
+type RealtimeEventInput = Omit<RealtimeEvent, "id" | "ts"> &
+  Partial<Pick<RealtimeEvent, "id" | "ts">>;

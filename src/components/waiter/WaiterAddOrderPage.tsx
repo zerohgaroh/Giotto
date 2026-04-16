@@ -2,28 +2,46 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Minus, Plus, X } from "lucide-react";
 import { formatPriceUZS } from "@/lib/format";
 import { useRestaurantData } from "@/lib/restaurant-store";
-import { useHallData } from "@/lib/service-store";
 
 type Props = {
-  waiterId: string;
   tableId: number;
 };
 
-export function WaiterAddOrderPage({ waiterId, tableId }: Props) {
+export function WaiterAddOrderPage({ tableId }: Props) {
   const router = useRouter();
   const { data: restaurant } = useRestaurantData();
-  const { data: hall, updateData } = useHallData();
 
   const [category, setCategory] = useState<string>("all");
   const [qtyMap, setQtyMap] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+  const [errorText, setErrorText] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
 
-  const table = hall.tables.find((candidate) => candidate.tableId === tableId);
+  useEffect(() => {
+    const verifyAccess = async () => {
+      try {
+        const response = await fetch(`/api/waiter/tables/${tableId}`, { cache: "no-store" });
+        if (response.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        if (response.status === 403 || response.status === 404) {
+          setAccessDenied(true);
+          return;
+        }
+        setAccessDenied(false);
+      } catch {
+        // keep optimistic mode on network glitches
+      }
+    };
+    void verifyAccess();
+  }, [tableId]);
 
   const visibleDishes = useMemo(
     () =>
@@ -42,7 +60,7 @@ export function WaiterAddOrderPage({ waiterId, tableId }: Props) {
   const totalQty = selected.reduce((sum, entry) => sum + entry.qty, 0);
   const totalSum = selected.reduce((sum, entry) => sum + entry.qty * entry.dish.price, 0);
 
-  if (!table || table.assignedWaiterId !== waiterId) {
+  if (accessDenied) {
     return (
       <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest flex-col items-center justify-center px-5 text-center">
         <h1 className="font-serif text-3xl font-semibold text-giotto-navy-deep">Нет доступа</h1>
@@ -56,6 +74,43 @@ export function WaiterAddOrderPage({ waiterId, tableId }: Props) {
       </main>
     );
   }
+
+  const submitOrder = async () => {
+    if (selected.length === 0 || saving) return;
+
+    setSaving(true);
+    setErrorText("");
+
+    try {
+      const response = await fetch(`/api/waiter/tables/${tableId}/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: selected.map((entry) => ({
+            dishId: entry.dish.id,
+            title: entry.dish.nameIt,
+            qty: entry.qty,
+            price: entry.dish.price,
+          })),
+        }),
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Не удалось добавить позиции");
+      }
+
+      router.push(`/waiter/tables/${tableId}`);
+    } catch {
+      setErrorText("Не удалось добавить позиции в счет.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest flex-col pb-[calc(6.2rem+var(--safe-bottom))]">
@@ -99,6 +154,12 @@ export function WaiterAddOrderPage({ waiterId, tableId }: Props) {
           ))}
         </div>
       </header>
+
+      {errorText ? (
+        <div className="mx-3 mt-3 rounded-lg border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-xs text-[#9a4f1e]">
+          {errorText}
+        </div>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-2.5 px-3 pt-3">
         {visibleDishes.map((dish) => {
@@ -184,38 +245,13 @@ export function WaiterAddOrderPage({ waiterId, tableId }: Props) {
           </p>
           <button
             type="button"
-            disabled={selected.length === 0}
+            disabled={selected.length === 0 || saving}
             onClick={() => {
-              const createdAt = Date.now();
-              const nextLines = selected.map((entry) => ({
-                id: `waiter-${entry.dish.id}-${createdAt}-${Math.random().toString(16).slice(2, 8)}`,
-                tableId,
-                dishId: entry.dish.id,
-                title: entry.dish.nameIt,
-                qty: entry.qty,
-                price: entry.dish.price,
-                source: "waiter" as const,
-                createdAt,
-              }));
-
-              updateData((current) => ({
-                ...current,
-                billLines: [...current.billLines, ...nextLines],
-                tables: current.tables.map((candidate) =>
-                  candidate.tableId === tableId
-                    ? {
-                        ...candidate,
-                        status: "ordered",
-                      }
-                    : candidate,
-                ),
-              }));
-
-              router.push(`/waiter/tables/${tableId}`);
+              void submitOrder();
             }}
             className="motion-action flex h-[3rem] w-full items-center justify-center rounded-[0.9rem] bg-giotto-navy text-[13px] font-semibold uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:bg-[#A7B2C8]"
           >
-            Добавить в счёт
+            {saving ? "Сохраняем..." : "Добавить в счёт"}
           </button>
         </div>
       </div>

@@ -1,26 +1,47 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { BellRing, Check, ChevronLeft } from "lucide-react";
 import { formatPriceUZS } from "@/lib/format";
-import {
-  formatDurationFrom,
-  formatMinutesAgo,
-  useHallData,
-} from "@/lib/service-store";
+import { formatDurationFrom, formatMinutesAgo } from "@/lib/service-store";
+import type { WaiterTableDetailResponse } from "@/lib/waiter-backend/types";
 import { REQUEST_META, sourceLabel, STATUS_META } from "./waiter-ui";
 
 type Props = {
-  waiterId: string;
   tableId: number;
 };
 
-export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
-  const { data, updateData } = useHallData();
+export function WaiterTableDetailPage({ tableId }: Props) {
+  const [data, setData] = useState<WaiterTableDetailResponse | null>(null);
   const [now, setNow] = useState(0);
   const [noteDraft, setNoteDraft] = useState("");
+  const [errorText, setErrorText] = useState("");
+  const [forbidden, setForbidden] = useState(false);
+
+  const pull = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/waiter/tables/${tableId}`, { cache: "no-store" });
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (response.status === 403 || response.status === 404) {
+        setForbidden(true);
+        return;
+      }
+      if (!response.ok) throw new Error("Не удалось загрузить стол");
+
+      const next = (await response.json()) as WaiterTableDetailResponse;
+      setData(next);
+      setNoteDraft(next.note ?? "");
+      setErrorText("");
+      setForbidden(false);
+    } catch {
+      setErrorText("Не удалось обновить данные стола.");
+    }
+  }, [tableId]);
 
   useEffect(() => {
     setNow(Date.now());
@@ -28,43 +49,51 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const waiter = useMemo(
-    () => data.waiters.find((candidate) => candidate.id === waiterId),
-    [data.waiters, waiterId],
-  );
+  useEffect(() => {
+    void pull();
 
-  const table = useMemo(
-    () => data.tables.find((candidate) => candidate.tableId === tableId),
-    [data.tables, tableId],
-  );
+    const poll = window.setInterval(() => {
+      void pull();
+    }, 2500);
 
-  const requests = useMemo(
-    () =>
-      data.requests
-        .filter((request) => request.tableId === tableId && !request.resolvedAt)
-        .sort((a, b) => b.createdAt - a.createdAt),
-    [data.requests, tableId],
-  );
+    const events = new EventSource("/api/realtime/stream");
+    const onEvent = () => {
+      void pull();
+    };
 
-  const billLines = useMemo(
-    () =>
-      data.billLines
-        .filter((line) => line.tableId === tableId)
-        .sort((a, b) => a.createdAt - b.createdAt),
-    [data.billLines, tableId],
-  );
+    events.addEventListener("waiter:called", onEvent);
+    events.addEventListener("bill:requested", onEvent);
+    events.addEventListener("waiter:acknowledged", onEvent);
+    events.addEventListener("order:added_by_waiter", onEvent);
+    events.addEventListener("table:status_changed", onEvent);
+
+    return () => {
+      window.clearInterval(poll);
+      events.removeEventListener("waiter:called", onEvent);
+      events.removeEventListener("bill:requested", onEvent);
+      events.removeEventListener("waiter:acknowledged", onEvent);
+      events.removeEventListener("order:added_by_waiter", onEvent);
+      events.removeEventListener("table:status_changed", onEvent);
+      events.close();
+    };
+  }, [pull]);
+
+  const table = data?.table;
+  const waiter = data?.waiter;
+  const requests = useMemo(() => data?.requests ?? [], [data?.requests]);
+  const billLines = useMemo(() => data?.billLines ?? [], [data?.billLines]);
 
   const total = useMemo(
     () => billLines.reduce((sum, line) => sum + line.qty * line.price, 0),
     [billLines],
   );
 
-  const savedNote = data.notesByTable[String(tableId)] ?? "";
-  useEffect(() => {
-    setNoteDraft(savedNote);
-  }, [savedNote, tableId]);
+  const doneCooldownLeft = useMemo(() => {
+    if (!table) return 0;
+    return Math.max(0, (table.doneCooldownUntil ?? 0) - now);
+  }, [now, table]);
 
-  if (!table || table.assignedWaiterId !== waiterId) {
+  if (forbidden) {
     return (
       <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest flex-col items-center justify-center px-5 text-center">
         <h1 className="font-serif text-3xl font-semibold text-giotto-navy-deep">Нет доступа</h1>
@@ -77,6 +106,14 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
         >
           Вернуться к моим столам
         </Link>
+      </main>
+    );
+  }
+
+  if (!table || !waiter) {
+    return (
+      <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest flex-col items-center justify-center px-5 text-center text-sm text-giotto-muted">
+        Загрузка данных стола...
       </main>
     );
   }
@@ -94,8 +131,55 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
     now > 0 ? formatMinutesAgo(timeMs, now) : "—";
 
   const statusMeta = STATUS_META[table.status];
-  const cooldownLeft = Math.max(0, (table.doneCooldownUntil ?? 0) - now);
-  const cooldownLabel = `${Math.floor(cooldownLeft / 1000)}с`;
+  const cooldownLabel = `${Math.floor(doneCooldownLeft / 1000)}с`;
+
+  const acknowledge = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/waiter/tables/${tableId}/ack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      if (!response.ok) throw new Error("ack failed");
+      const next = (await response.json()) as WaiterTableDetailResponse;
+      setData(next);
+      setNoteDraft(next.note ?? "");
+      setErrorText("");
+    } catch {
+      setErrorText("Не удалось подтвердить вызов.");
+    }
+  };
+
+  const saveNote = async () => {
+    try {
+      const response = await fetch(`/api/waiter/tables/${tableId}/note`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: noteDraft }),
+      });
+      if (!response.ok) throw new Error("note failed");
+      const next = (await response.json()) as WaiterTableDetailResponse;
+      setData(next);
+      setNoteDraft(next.note ?? "");
+    } catch {
+      setErrorText("Не удалось сохранить заметку.");
+    }
+  };
+
+  const markDone = async () => {
+    try {
+      const response = await fetch(`/api/waiter/tables/${tableId}/done`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error("done failed");
+      const next = (await response.json()) as WaiterTableDetailResponse;
+      setData(next);
+      setNoteDraft(next.note ?? "");
+      setErrorText("");
+    } catch {
+      setErrorText("Не удалось завершить обслуживание.");
+    }
+  };
 
   return (
     <main className="motion-page mx-auto flex min-h-dvh w-full max-w-guest flex-col px-4 pb-[calc(6.8rem+var(--safe-bottom))]">
@@ -125,6 +209,12 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
         </div>
       </header>
 
+      {errorText ? (
+        <div className="mt-3 rounded-lg border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-xs text-[#9a4f1e]">
+          {errorText}
+        </div>
+      ) : null}
+
       {requests.length > 0 ? (
         <section className="mt-4 space-y-2">
           {requests.map((request) => (
@@ -149,25 +239,7 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  const acknowledgedAt = Date.now();
-                  updateData((current) => ({
-                    ...current,
-                    requests: current.requests.map((candidate) =>
-                      candidate.id === request.id
-                        ? {
-                            ...candidate,
-                            acknowledgedAt,
-                            acknowledgedBy: waiterId,
-                            resolvedAt: acknowledgedAt,
-                          }
-                        : candidate,
-                    ),
-                    tables: current.tables.map((candidate) =>
-                      candidate.tableId === tableId
-                        ? { ...candidate, status: "occupied" }
-                        : candidate,
-                    ),
-                  }));
+                  void acknowledge(request.id);
                 }}
                 className="motion-action mt-2.5 inline-flex min-h-[2.4rem] items-center justify-center rounded-[0.85rem] bg-[#C8A96E] px-4 text-[13px] font-semibold text-giotto-navy-deep"
               >
@@ -224,13 +296,7 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
           value={noteDraft}
           onChange={(event) => setNoteDraft(event.target.value)}
           onBlur={() => {
-            updateData((current) => ({
-              ...current,
-              notesByTable: {
-                ...current.notesByTable,
-                [String(tableId)]: noteDraft.trim(),
-              },
-            }));
+            void saveNote();
           }}
           rows={3}
           placeholder="аллергия на орехи, VIP, день рождения..."
@@ -245,28 +311,17 @@ export function WaiterTableDetailPage({ waiterId, tableId }: Props) {
         <div className="mx-auto max-w-guest">
           <button
             type="button"
-            disabled={cooldownLeft > 0}
+            disabled={doneCooldownLeft > 0}
             onClick={() => {
-              const doneAt = Date.now();
-              updateData((current) => ({
-                ...current,
-                tables: current.tables.map((candidate) =>
-                  candidate.tableId === tableId
-                    ? {
-                        ...candidate,
-                        doneCooldownUntil: doneAt + 30_000,
-                      }
-                    : candidate,
-                ),
-              }));
+              void markDone();
             }}
             className="motion-action flex h-[3rem] w-full items-center justify-center gap-1.5 rounded-[0.95rem] bg-[#C8A96E] text-[14px] font-semibold text-giotto-navy-deep disabled:cursor-not-allowed disabled:opacity-55"
           >
             <Check className="h-4.5 w-4.5" strokeWidth={1.9} />
-            {cooldownLeft > 0 ? `Повтор через ${cooldownLabel}` : "Все обслужил"}
+            {doneCooldownLeft > 0 ? `Повтор через ${cooldownLabel}` : "Все обслужил"}
           </button>
           <p className="mt-1 text-center text-[11px] text-giotto-muted">
-            {waiter ? `Официант: ${waiter.name}` : ""}
+            Официант: {waiter.name}
           </p>
         </div>
       </div>
