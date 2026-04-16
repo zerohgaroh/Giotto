@@ -1,17 +1,87 @@
-import { WAITER_SEED_ACCOUNTS } from "./waiter-data";
+import { createHmac, timingSafeEqual } from "crypto";
+import type { AuthSession } from "@/lib/waiter-backend/types";
 
 export const WAITER_COOKIE = "giotto_waiter_session";
+const DEFAULT_TTL_SECONDS = 60 * 60 * 12;
+const DEFAULT_SECRET = "giotto_demo_jwt_secret_v1";
 
-export function findWaiterByCredentials(login: string, password: string) {
-  const normalizedLogin = login.trim().toLowerCase();
-  return WAITER_SEED_ACCOUNTS.find(
-    (account) =>
-      account.active &&
-      account.login.toLowerCase() === normalizedLogin &&
-      account.password === password,
-  );
+type WaiterJwtPayload = {
+  role: "waiter";
+  waiterId: string;
+  iat: number;
+  exp: number;
+};
+
+function base64UrlEncode(input: string | Buffer): string {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 }
 
-export function findWaiterById(waiterId: string) {
-  return WAITER_SEED_ACCOUNTS.find((account) => account.id === waiterId && account.active);
+function base64UrlDecode(input: string): string {
+  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+  return Buffer.from(`${normalized}${padding}`, "base64").toString("utf-8");
+}
+
+function sign(value: string): string {
+  const secret = process.env.GIOTTO_DEMO_JWT_SECRET ?? DEFAULT_SECRET;
+  return base64UrlEncode(createHmac("sha256", secret).update(value).digest());
+}
+
+export function issueWaiterToken(waiterId: string, ttlSeconds: number = DEFAULT_TTL_SECONDS): string {
+  const now = Math.floor(Date.now() / 1000);
+  const payload: WaiterJwtPayload = {
+    role: "waiter",
+    waiterId,
+    iat: now,
+    exp: now + ttlSeconds,
+  };
+
+  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = base64UrlEncode(JSON.stringify(payload));
+  const signature = sign(`${header}.${body}`);
+  return `${header}.${body}.${signature}`;
+}
+
+export function parseWaiterToken(token: string | undefined): AuthSession | null {
+  if (!token) return null;
+  const [header, payload, signature] = token.split(".");
+  if (!header || !payload || !signature) return null;
+
+  const expectedSignature = sign(`${header}.${payload}`);
+  const safeSignature = Buffer.from(signature);
+  const safeExpected = Buffer.from(expectedSignature);
+  if (safeSignature.length !== safeExpected.length) return null;
+  if (!timingSafeEqual(safeSignature, safeExpected)) return null;
+
+  try {
+    const parsed = JSON.parse(base64UrlDecode(payload)) as Partial<WaiterJwtPayload>;
+    if (parsed.role !== "waiter") return null;
+    if (typeof parsed.waiterId !== "string" || parsed.waiterId.length === 0) return null;
+    if (typeof parsed.exp !== "number") return null;
+
+    const expiresAt = parsed.exp * 1000;
+    if (Date.now() >= expiresAt) return null;
+
+    return {
+      role: "waiter",
+      waiterId: parsed.waiterId,
+      expiresAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function waiterCookieOptions(maxAgeSec: number = DEFAULT_TTL_SECONDS) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: maxAgeSec,
+  };
 }
