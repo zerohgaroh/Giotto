@@ -1,5 +1,5 @@
-import { submitGuestReview } from "@/lib/waiter-backend/backend";
-import { noStoreJson, toErrorResponse } from "@/lib/waiter-backend/http";
+import { submitGuestReview } from "@/lib/staff-backend/guest";
+import { noStoreJson, toErrorResponse } from "@/lib/staff-backend/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     const review = await submitGuestReview({
-      tableId: params.tableId,
+      tableId: Number(params.tableId),
       rating,
       comment: body.comment,
     });

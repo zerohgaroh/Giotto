@@ -7,7 +7,6 @@ import { ChevronLeft, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { formatPriceUZS } from "@/lib/format";
 import { getDishByIdFromData, useRestaurantData } from "@/lib/restaurant-store";
-import { readHallData, writeHallData } from "@/lib/service-store";
 
 type Props = { tableId: string };
 
@@ -19,7 +18,7 @@ export function CartPage({ tableId }: Props) {
   const { data } = useRestaurantData();
   const totalQty = lines.reduce((sum, line) => sum + line.qty, 0);
 
-  const checkout = () => {
+  const checkout = async () => {
     if (lines.length === 0) return;
 
     let normalized = tableId;
@@ -32,42 +31,33 @@ export function CartPage({ tableId }: Props) {
     const numericTableId = Number(normalized);
     if (Number.isFinite(numericTableId) && numericTableId > 0) {
       try {
-        const current = readHallData();
-        const createdAt = Date.now();
-        const nextLines = lines.flatMap((line, index) => {
+        const items = lines.flatMap((line) => {
           const dish = getDishByIdFromData(data.dishes, line.dishId);
           if (!dish) return [];
           return [
             {
-              id: `bill-guest-${numericTableId}-${createdAt}-${index}`,
-              tableId: numericTableId,
               dishId: dish.id,
               title: dish.nameRu,
               qty: line.qty,
               price: dish.price,
-              source: "guest" as const,
-              createdAt,
             },
           ];
         });
 
-        if (nextLines.length > 0) {
-          writeHallData({
-            ...current,
-            tables: current.tables.map((table) =>
-              table.tableId === numericTableId
-                ? {
-                    ...table,
-                    status: "ordered",
-                    guestStartedAt: table.status === "free" ? createdAt : table.guestStartedAt,
-                  }
-                : table,
-            ),
-            billLines: [...current.billLines, ...nextLines],
+        if (items.length > 0) {
+          const response = await fetch(`/api/table/${numericTableId}/orders`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ items }),
           });
+          if (!response.ok) {
+            throw new Error("checkout failed");
+          }
         }
       } catch {
-        // ignore storage failures
+        return;
       }
     }
 
@@ -193,7 +183,9 @@ export function CartPage({ tableId }: Props) {
             </div>
             <button
               type="button"
-              onClick={checkout}
+              onClick={() => {
+                void checkout();
+              }}
               className="motion-action flex h-[50px] w-full items-center justify-center rounded-[0.85rem] bg-gradient-to-r from-[#0d2a64] to-[#091c46] text-sm font-semibold text-white transition hover:brightness-105"
             >
               Оформить заказ

@@ -1,24 +1,18 @@
-import { NextResponse } from "next/server";
-import { getRestaurantData, setRestaurantData } from "@/lib/server-state";
+import { noStoreJson } from "@/lib/staff-backend/http";
+import { getRestaurantData } from "@/lib/staff-backend/restaurant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const restaurant = await getRestaurantData();
-  return NextResponse.json(restaurant, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-    },
-  });
+  return noStoreJson(await getRestaurantData());
 }
 
-export async function PUT(request: Request) {
-  const body = await request.json();
-  const restaurant = await setRestaurantData(body);
-  return NextResponse.json(restaurant, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+export async function PUT() {
+  return noStoreJson(
+    {
+      error: "Restaurant mutation from web dashboard is deprecated in waiter v1.",
     },
-  });
+    501,
+  );
 }

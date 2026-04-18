@@ -1,18 +1,36 @@
 services:
+  giotto-db:
+    container_name: giotto-db
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: giotto
+      POSTGRES_USER: giotto
+      POSTGRES_PASSWORD: giotto
+    volumes:
+      - giotto-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   giotto-web:
     container_name: giotto-web
     build:
       context: .
       dockerfile: Dockerfile
+    command: sh -c "npx prisma db push && npm run dev:network"
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+      DATABASE_URL: postgresql://giotto:giotto@giotto-db:5432/giotto?schema=public
+      GIOTTO_STAFF_TOKEN_SECRET: giotto_staff_token_secret_v1
     volumes:
       - .:/app
       - giotto-node-modules:/app/node_modules
+    depends_on:
+      - giotto-db
     restart: unless-stopped
 
   giotto-web-3002:
@@ -20,17 +38,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: npm run dev:network:3002
+    command: sh -c "npx prisma db push && npm run dev:network:3002"
     ports:
       - "3002:3002"
     environment:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+      DATABASE_URL: postgresql://giotto:giotto@giotto-db:5432/giotto?schema=public
+      GIOTTO_STAFF_TOKEN_SECRET: giotto_staff_token_secret_v1
     volumes:
       - .:/app
       - giotto-node-modules:/app/node_modules
+    depends_on:
+      - giotto-db
     restart: unless-stopped
 
 volumes:
   giotto-node-modules:
+  giotto-postgres-data:

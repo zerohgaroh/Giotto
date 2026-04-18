@@ -1,6 +1,6 @@
-import { createGuestRequest, getGuestRequestCooldown } from "@/lib/waiter-backend/backend";
-import { noStoreJson, toErrorResponse } from "@/lib/waiter-backend/http";
-import type { ServiceRequestType } from "@/lib/waiter-backend/types";
+import { createGuestRequest, getGuestRequestCooldown } from "@/lib/staff-backend/guest";
+import { noStoreJson, toErrorResponse } from "@/lib/staff-backend/http";
+import type { ServiceRequestType } from "@/lib/staff-backend/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: Params) {
   try {
     const { searchParams } = new URL(request.url);
     const type = parseType(searchParams.get("type"));
-    const cooldown = await getGuestRequestCooldown({ tableId: params.tableId, type });
+    const cooldown = await getGuestRequestCooldown({ tableId: Number(params.tableId), type });
     return noStoreJson({ cooldown });
   } catch (error) {
     return toErrorResponse(error);
@@ -33,7 +33,7 @@ export async function POST(request: Request, { params }: Params) {
     const type = parseType(body.type);
 
     const result = await createGuestRequest({
-      tableId: params.tableId,
+      tableId: Number(params.tableId),
       type,
       reason: body.reason,
     });

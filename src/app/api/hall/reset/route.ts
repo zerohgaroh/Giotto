@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
-import { resetHallData } from "@/lib/server-state";
+import { noStoreJson } from "@/lib/staff-backend/http";
+import { getHallProjection } from "@/lib/staff-backend/projections";
+import { resetStaffSeedData } from "@/lib/staff-backend/seed";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const hall = await resetHallData();
-  return NextResponse.json(hall, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-    },
-  });
+  await resetStaffSeedData();
+  return noStoreJson(await getHallProjection());
 }

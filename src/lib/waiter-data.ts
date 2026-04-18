@@ -10,7 +10,7 @@ export type WaiterSeedAccount = {
 export const WAITER_SEED_ACCOUNTS: WaiterSeedAccount[] = [
   {
     id: "w-marco",
-    name: "Марко Р.",
+    name: "Marco R.",
     login: "marco",
     password: "waiter123",
     active: true,
@@ -18,7 +18,7 @@ export const WAITER_SEED_ACCOUNTS: WaiterSeedAccount[] = [
   },
   {
     id: "w-luca",
-    name: "Лука Ф.",
+    name: "Luca F.",
     login: "luca",
     password: "waiter123",
     active: true,
