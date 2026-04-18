@@ -370,6 +370,14 @@ export type ReplaceWaiterAssignmentsInput = {
 
 export type ManagerMenuSnapshot = Pick<RestaurantData, "categories" | "dishes">;
 
+export type MenuImageUploadResponse = {
+  url: string;
+  width: number;
+  height: number;
+  mimeType: string;
+  sizeBytes: number;
+};
+
 export type MenuCategoryInput = {
   labelRu: string;
   icon?: string;
