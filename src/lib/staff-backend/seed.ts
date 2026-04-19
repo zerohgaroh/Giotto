@@ -1,3 +1,10 @@
+// Declare global property for seed promise
+declare global {
+  interface GlobalThis {
+    __giottoSeedPromise?: Promise<void>;
+  }
+}
+
 import { DEFAULT_RESTAURANT_PROFILE, DISHES, MENU_CATEGORIES } from "@/lib/menu-data";
 import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
 import { WAITER_SEED_ACCOUNTS } from "@/lib/waiter-data";
@@ -7,33 +14,27 @@ import { prisma } from "./prisma";
 // eslint-disable-next-line no-console
 const log = (...args: any[]) => console.log("[seed]", ...args);
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __giottoSeedPromise: Promise<void> | undefined;
-
-  function buildDefaultFloorPlan(tableIds: number[]) {
-    const columns = 5;
-    const tables = tableIds.map((tableId, index) => {
-      const row = Math.floor(index / columns);
-      const col = index % columns;
-      return {
-        tableId,
-        label: `Table ${tableId}`,
-        x: 12 + col * 20,
-        y: 16 + row * 17,
-        shape: col % 3 === 0 ? "round" : col % 2 === 0 ? "rect" : "square",
-        sizePreset: "md",
-      } as const;
-    });
-
+function buildDefaultFloorPlan(tableIds: number[]): { tables: any[]; zones: any[] } {
+  const columns = 5;
+  const tables = tableIds.map((tableId, index) => {
+    const row = Math.floor(index / columns);
+    const col = index % columns;
     return {
-      tables,
-      zones: [
-        { id: "zone-main", label: "Main hall", x: 8, y: 8, width: 62, height: 56 },
-        { id: "zone-terrace", label: "Terrace", x: 72, y: 12, width: 22, height: 36 },
-      ],
-    };
-  }
+      tableId,
+      label: `Table ${tableId}`,
+      x: 12 + col * 20,
+      y: 16 + row * 17,
+      shape: col % 3 === 0 ? "round" : col % 2 === 0 ? "rect" : "square",
+      sizePreset: "md",
+    } as const;
+  });
+  return {
+    tables,
+    zones: [
+      { id: "zone-main", label: "Main hall", x: 8, y: 8, width: 62, height: 56 },
+      { id: "zone-terrace", label: "Terrace", x: 72, y: 12, width: 22, height: 36 },
+    ],
+  };
 }
 
 async function createSeedUsers() {
@@ -64,14 +65,14 @@ async function createSeedUsers() {
   return { waiters, managers };
 }
 
-async function seedRestaurantProfile(tx) {
+async function seedRestaurantProfile(tx: any) {
   if ((await tx.restaurantProfile.count()) === 0) {
     log("Сидируем профиль ресторана...");
     await tx.restaurantProfile.create({ data: { id: 1, ...DEFAULT_RESTAURANT_PROFILE } });
   }
 }
 
-async function seedRestaurantSettings(tx, defaultFloorPlan) {
+async function seedRestaurantSettings(tx: any, defaultFloorPlan: any) {
   if ((await tx.restaurantSettings.count()) === 0) {
     log("Сидируем настройки ресторана...");
     await tx.restaurantSettings.create({
@@ -84,7 +85,7 @@ async function seedRestaurantSettings(tx, defaultFloorPlan) {
   }
 }
 
-async function seedMenuCategories(tx) {
+async function seedMenuCategories(tx: any) {
   if ((await tx.menuCategory.count()) === 0) {
     log("Сидируем категории меню...");
     for (const [index, category] of MENU_CATEGORIES.entries()) {
@@ -100,7 +101,7 @@ async function seedMenuCategories(tx) {
   }
 }
 
-async function seedDishes(tx) {
+async function seedDishes(tx: any) {
   if ((await tx.dish.count()) === 0) {
     log("Сидируем блюда...");
     for (const [index, dish] of DISHES.entries()) {
@@ -126,7 +127,7 @@ async function seedDishes(tx) {
   }
 }
 
-async function seedStaffUsers(tx, waiters, managers) {
+async function seedStaffUsers(tx: any, waiters: any[], managers: any[]) {
   if ((await tx.staffUser.count()) === 0) {
     log("Сидируем пользователей (staffUser)...");
     for (const user of [...waiters, ...managers]) {
@@ -135,7 +136,7 @@ async function seedStaffUsers(tx, waiters, managers) {
   }
 }
 
-async function seedRestaurantTables(tx, tableIds, defaultFloorPlan) {
+async function seedRestaurantTables(tx: any, tableIds: number[], defaultFloorPlan: any) {
   if ((await tx.restaurantTable.count()) === 0) {
     log("Сидируем столы...");
     for (const tableId of tableIds) {
@@ -145,15 +146,15 @@ async function seedRestaurantTables(tx, tableIds, defaultFloorPlan) {
           label: `Table ${tableId}`,
           shape: tableId % 3 === 0 ? "round" : tableId % 2 === 0 ? "rect" : "square",
           sizePreset: "md",
-          floorX: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.x,
-          floorY: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.y,
+          floorX: defaultFloorPlan.tables.find((table: any) => table.tableId === tableId)?.x,
+          floorY: defaultFloorPlan.tables.find((table: any) => table.tableId === tableId)?.y,
         },
       });
     }
   }
 }
 
-async function seedTableAssignments(tx, now) {
+async function seedTableAssignments(tx: any, now: number) {
   if ((await tx.tableAssignment.count()) === 0) {
     log("Сидируем назначения столов официантам...");
     for (const waiter of WAITER_SEED_ACCOUNTS) {
@@ -170,7 +171,7 @@ async function seedTableAssignments(tx, now) {
   }
 }
 
-async function seedTableSessions(tx, now) {
+async function seedTableSessions(tx: any, now: number) {
   if ((await tx.tableSession.count()) === 0) {
     log("Сидируем сессии столов...");
     const startedAtFor = (tableId: number) => {
@@ -192,7 +193,7 @@ async function seedTableSessions(tx, now) {
   }
 }
 
-async function seedServiceRequests(tx, now) {
+async function seedServiceRequests(tx: any, now: number) {
   if ((await tx.serviceRequest.count()) === 0) {
     log("Сидируем сервисные запросы...");
     await tx.serviceRequest.create({
@@ -218,7 +219,7 @@ async function seedServiceRequests(tx, now) {
   }
 }
 
-async function seedWaiterTasks(tx, now) {
+async function seedWaiterTasks(tx: any, now: number) {
   if ((await tx.waiterTask.count()) === 0) {
     log("Сидируем задачи официантов...");
     await tx.waiterTask.create({
@@ -254,7 +255,7 @@ async function seedWaiterTasks(tx, now) {
   }
 }
 
-async function seedWaiterOrderBatches(tx, now) {
+async function seedWaiterOrderBatches(tx: any, now: number) {
   if ((await tx.waiterOrderBatch.count()) === 0) {
     log("Сидируем waiterOrderBatch...");
     await tx.waiterOrderBatch.create({
@@ -269,7 +270,7 @@ async function seedWaiterOrderBatches(tx, now) {
   }
 }
 
-async function seedBillLines(tx, now) {
+async function seedBillLines(tx: any, now: number) {
   if ((await tx.billLine.count()) === 0) {
     log("Сидируем строки счета...");
     const billLines = [
@@ -326,7 +327,7 @@ async function seedBillLines(tx, now) {
   }
 }
 
-async function seedSessionNotes(tx) {
+async function seedSessionNotes(tx: any) {
   if ((await tx.sessionNote.count()) === 0) {
     log("Сидируем заметки по сессиям...");
     await tx.sessionNote.create({
@@ -388,17 +389,17 @@ function shouldAutoSeedRuntime() {
 }
 
 export async function runStaffBackendSeed() {
-  globalThis.__giottoSeedPromise = seedDatabase();
-  await globalThis.__giottoSeedPromise;
+  (globalThis as GlobalThis).__giottoSeedPromise = seedDatabase();
+  await (globalThis as GlobalThis).__giottoSeedPromise;
 }
 
 export async function ensureStaffBackendReady() {
-  if (shouldAutoSeedRuntime() && !globalThis.__giottoSeedPromise) {
-    globalThis.__giottoSeedPromise = seedDatabase();
+  if (shouldAutoSeedRuntime() && !(globalThis as GlobalThis).__giottoSeedPromise) {
+    (globalThis as GlobalThis).__giottoSeedPromise = seedDatabase();
   }
 
-  if (globalThis.__giottoSeedPromise) {
-    await globalThis.__giottoSeedPromise;
+  if ((globalThis as GlobalThis).__giottoSeedPromise) {
+    await (globalThis as GlobalThis).__giottoSeedPromise;
   }
 
   await maybeRunStaffBackendMaintenance();
@@ -427,6 +428,6 @@ export async function resetStaffSeedData() {
     await tx.restaurantProfile.deleteMany();
   });
 
-  globalThis.__giottoSeedPromise = undefined;
+  (globalThis as GlobalThis).__giottoSeedPromise = undefined;
   await runStaffBackendSeed();
 }
