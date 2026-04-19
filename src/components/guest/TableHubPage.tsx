@@ -1,12 +1,13 @@
 "use client";
 
+
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
-  Bell,
-  ClipboardList,
-  Menu,
+  ConciergeBell,
+  ReceiptText,
+  UtensilsCrossed,
   Wifi,
   X,
 } from "lucide-react";
@@ -113,15 +114,21 @@ export function TableHubPage({ tableId }: Props) {
 
       <nav className="mt-6 flex w-full flex-col gap-3" aria-label="Сервис за столом">
         <Link href={`${base}/menu`} className={btn}>
-          <Menu className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14">
+            <UtensilsCrossed className="h-4 w-4" strokeWidth={2.15} />
+          </span>
           Меню
         </Link>
         <Link href={`${base}/waiter?intent=bill`} className={btn}>
-          <ClipboardList className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14">
+            <ReceiptText className="h-4 w-4" strokeWidth={2.15} />
+          </span>
           Принести счёт
         </Link>
         <Link href={`${base}/waiter`} className={btn}>
-          <Bell className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14">
+            <ConciergeBell className="h-4 w-4" strokeWidth={2.15} />
+          </span>
           Позвать официанта
         </Link>
       </nav>
