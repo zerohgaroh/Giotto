@@ -41,15 +41,33 @@
 
         <nav class="mt-6 flex w-full flex-col gap-3" aria-label="Сервис за столом">
           <a href="<%= menuPath %>" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
-            <span aria-hidden="true">≡</span>
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7h16"></path>
+                <path d="M4 12h16"></path>
+                <path d="M4 17h16"></path>
+              </svg>
+            </span>
             Меню
           </a>
           <a href="<%= waiterPath %>?intent=bill" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
-            <span aria-hidden="true">▤</span>
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+                <path d="M9 7h6"></path>
+                <path d="M9 11h6"></path>
+                <path d="M9 15h4"></path>
+              </svg>
+            </span>
             Принести счёт
           </a>
           <a href="<%= waiterPath %>" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
-            <span aria-hidden="true">◉</span>
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/14" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+                <path d="M10 17a2 2 0 0 0 4 0"></path>
+              </svg>
+            </span>
             Позвать официанта
           </a>
         </nav>
@@ -60,6 +78,14 @@
             class="motion-action inline-flex items-center gap-2 font-sans text-[14px] font-medium text-giotto-navy-soft underline decoration-giotto-gold/60 underline-offset-4 transition hover:text-giotto-navy"
             @click="wifiOpen = true"
           >
+            <span class="inline-flex h-5 w-5 items-center justify-center text-giotto-navy">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.5a11 11 0 0 1 14 0"></path>
+                <path d="M8 15.5a6.5 6.5 0 0 1 8 0"></path>
+                <path d="M11 18.2a2.2 2.2 0 0 1 2 0"></path>
+                <circle cx="12" cy="20" r="1"></circle>
+              </svg>
+            </span>
             Wi‑Fi зала
           </button>
           <p class="max-w-xs text-center font-sans text-[11px] leading-relaxed text-giotto-muted">

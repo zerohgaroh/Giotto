@@ -109,6 +109,12 @@
               <span x-show="totalQty > 0" class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-giotto-gold px-1 text-[10px] font-bold text-giotto-navy-deep" style="display:none" x-text="totalQty > 99 ? '99+' : totalQty"></span>
             </a>
             <a href="<%= waiterPath %>" class="motion-action flex flex-1 items-center justify-center gap-2 rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-white shadow-lift transition hover:bg-giotto-navy-deep">
+              <span class="inline-flex h-5 w-5 items-center justify-center" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+                  <path d="M10 17a2 2 0 0 0 4 0"></path>
+                </svg>
+              </span>
               Вызов
             </a>
           </div>
