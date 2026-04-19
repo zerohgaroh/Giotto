@@ -4,9 +4,6 @@ const nextConfig = {
   experimental: {
     cpus: 1,
     workerThreads: false,
-    staticGenerationRetryCount: 1,
-    staticGenerationMaxConcurrency: 1,
-    staticGenerationMinPagesPerWorker: 1000,
   },
   images: {
     remotePatterns: [
