@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <%- include("../partials/head", { pageTitle }) %>
+  </head>
+  <body>
+    <main class="motion-page mx-auto flex min-h-dvh w-full max-w-guest items-center px-6 py-10">
+      <section class="motion-surface w-full rounded-[1.75rem] border border-giotto-line bg-white/90 p-6 text-center shadow-card backdrop-blur-sm">
+        <div class="mx-auto flex w-fit items-center justify-center rounded-full bg-giotto-navy p-3.5 shadow-[0_10px_24px_rgba(13,43,107,0.2)]">
+          <span class="relative inline-block h-16 w-16 overflow-hidden rounded-full bg-giotto-navy shadow-lift ring-2 ring-giotto-gold/35 ring-offset-2 ring-offset-giotto-paper ring-white/25">
+            <img src="<%= profile.logo %>" alt="<%= profile.name %>" class="h-full w-full object-contain" />
+          </span>
+        </div>
+
+        <p class="mt-4 text-[11px] uppercase tracking-[0.22em] text-giotto-muted">Giotto Guest</p>
+        <h1 class="mt-1 font-serif text-4xl font-semibold text-giotto-navy-deep">Экран гостя</h1>
+        <p class="mt-4 text-[15px] leading-relaxed text-giotto-muted">
+          Для входа регистрация не нужна. Просто откройте персональную ссылку вашего стола через NFC-метку.
+        </p>
+
+        <% if (errorText) { %>
+          <p class="mt-4 rounded-giotto border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-sm text-[#9a4f1e]">
+            <%= errorText %>
+          </p>
+        <% } %>
+
+        <p class="mt-6 text-sm text-giotto-muted">
+          Для персонала web-интерфейс больше не используется. Staff работает через мобильное приложение.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

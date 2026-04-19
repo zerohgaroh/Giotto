@@ -1,0 +1,64 @@
+<script id="review-prompt-data" type="application/json"><%- serialize({
+  tableId,
+  reviewUrl: `/api/table/${encodeURIComponent(tableId)}/review`,
+  sseUrl: "/api/realtime/stream",
+}) %></script>
+
+<div x-data="reviewPrompt('review-prompt-data')" x-cloak>
+  <div
+    x-show="open"
+    class="fixed inset-0 z-[80] flex items-end justify-center sm:items-center"
+    style="display: none"
+  >
+    <button
+      type="button"
+      class="absolute inset-0 bg-giotto-navy-deep/55"
+      aria-label="Закрыть"
+      @click="closePrompt()"
+    ></button>
+    <div class="relative m-0 w-full max-w-guest rounded-t-giotto-xl border border-giotto-line bg-white p-6 shadow-card sm:m-4 sm:rounded-giotto-lg">
+      <p class="text-[11px] uppercase tracking-[0.2em] text-giotto-muted">Giotto Feedback</p>
+      <h2 class="mt-1 font-serif text-2xl font-semibold text-giotto-navy-deep">Как вас обслужили?</h2>
+
+      <div class="mt-4 flex items-center justify-center gap-1.5">
+        <template x-for="value in [1, 2, 3, 4, 5]" :key="value">
+          <button
+            type="button"
+            class="motion-action rounded-full p-1 text-3xl"
+            :class="value <= rating ? 'text-[#C8A96E]' : 'text-[#D4D1CB]'"
+            :aria-label="`Оценка ${value}`"
+            @click="rating = value"
+          >
+            ★
+          </button>
+        </template>
+      </div>
+
+      <textarea
+        x-model="comment"
+        rows="4"
+        placeholder="Комментарий (необязательно)"
+        class="motion-action mt-4 w-full resize-none rounded-xl border border-giotto-line bg-white px-3 py-2 text-[14px] outline-none focus:border-giotto-navy"
+      ></textarea>
+
+      <div class="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          class="motion-action min-h-[2.8rem] rounded-xl border border-giotto-line bg-white text-sm font-semibold text-giotto-navy"
+          @click="closePrompt()"
+        >
+          Пропустить
+        </button>
+        <button
+          type="button"
+          class="motion-action min-h-[2.8rem] rounded-xl bg-giotto-navy text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="submitting"
+          @click="submit()"
+        >
+          <span x-show="!submitting">Отправить</span>
+          <span x-show="submitting" style="display: none">Отправляем...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

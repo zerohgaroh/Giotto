@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <%- include("../partials/head", { pageTitle }) %>
+  </head>
+  <body>
+    <main
+      class="motion-page mx-auto flex min-h-dvh max-w-guest flex-col bg-giotto-paper"
+      style="padding-top:max(0.75rem,var(--safe-top));padding-bottom:max(1.5rem,var(--safe-bottom));"
+    >
+      <header class="motion-surface border-b border-giotto-line bg-white px-3 py-3">
+        <div class="flex items-center gap-2">
+          <a href="<%= tablePath %>" class="motion-action flex h-11 w-11 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper" aria-label="К столу">←</a>
+          <div class="flex-1">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-giotto-muted">Стол <%= tableLabel %></p>
+            <h1 class="font-serif text-lg font-semibold text-giotto-navy-deep">Жалоба</h1>
+          </div>
+        </div>
+      </header>
+
+      <% if (complaintSent) { %>
+        <%- include("../partials/complaint-success", { tablePath }) %>
+      <% } else { %>
+        <%- include("../partials/complaint-form", { complaintPath, complaintError, complaintText, tablePath }) %>
+      <% } %>
+
+      <%- include("../partials/review-prompt", { tableId }) %>
+    </main>
+  </body>
+</html>

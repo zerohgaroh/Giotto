@@ -1,20 +1,18 @@
-const { execFileSync } = require('child_process');
-const path = require('path');
-const { cleanBuildDirs } = require('./clean.cjs');
+const { execFileSync } = require("child_process");
+const path = require("path");
+const { cleanBuildDirs } = require("./clean.cjs");
 
-const rootDir = __dirname ? path.resolve(__dirname, '..') : process.cwd();
-const nextBin = require.resolve('next/dist/bin/next', { paths: [rootDir] });
+const rootDir = __dirname ? path.resolve(__dirname, "..") : process.cwd();
+const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const buildEnv = {
   ...process.env,
-  CI: process.env.CI || '1',
-  TOKIO_WORKER_THREADS: process.env.TOKIO_WORKER_THREADS || '1',
-  RAYON_NUM_THREADS: process.env.RAYON_NUM_THREADS || '1',
+  CI: process.env.CI || "1",
 };
 
 cleanBuildDirs();
 
-execFileSync(process.execPath, [nextBin, 'build'], {
+execFileSync(npmBin, ["run", "build"], {
   cwd: rootDir,
-  stdio: 'inherit',
+  stdio: "inherit",
   env: buildEnv,
 });

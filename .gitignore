@@ -28,6 +28,7 @@
 /build
 /dist
 /release
+/public/assets/app.css
 
 # misc
 .DS_Store

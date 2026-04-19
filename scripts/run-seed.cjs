@@ -1,9 +1,27 @@
 const { execFileSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
-const { loadEnvConfig } = require("@next/env");
+const dotenv = require("dotenv");
 
 const rootDir = path.resolve(__dirname, "..");
-loadEnvConfig(rootDir, process.env.NODE_ENV !== "production");
+
+function loadEnvFiles() {
+  const mode = process.env.NODE_ENV || "development";
+  const candidates = [
+    ".env",
+    mode !== "test" ? ".env.local" : null,
+    `.env.${mode}`,
+    `.env.${mode}.local`,
+  ].filter(Boolean);
+
+  for (const filename of candidates) {
+    const absolutePath = path.join(rootDir, filename);
+    if (!fs.existsSync(absolutePath)) continue;
+    dotenv.config({ path: absolutePath, override: true });
+  }
+}
+
+loadEnvFiles();
 
 function resolveTsxCli() {
   try {

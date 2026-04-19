@@ -5,18 +5,18 @@ const rootDir = path.resolve(__dirname, "..");
 const releaseDir = path.join(rootDir, "release", "hosting");
 
 const entriesToCopy = [
-  ".next",
   "public",
   "prisma",
   "scripts",
   "src",
+  "views",
   ".env.production",
   "server.js",
   "package.json",
   "package-lock.json",
-  "next.config.mjs",
   "tsconfig.json",
-  "next-env.d.ts",
+  "tailwind.config.js",
+  "postcss.config.js",
 ];
 
 function removeDir(target) {
@@ -34,16 +34,6 @@ function copyEntry(relativePath) {
   fs.cpSync(source, target, {
     recursive: true,
     force: true,
-    filter: (src) => {
-      const normalized = src.split(path.sep).join("/");
-      if (normalized.includes("/.next/cache")) {
-        return false;
-      }
-      if (normalized.endsWith("/.next/cache")) {
-        return false;
-      }
-      return true;
-    },
   });
 }
 
@@ -53,9 +43,10 @@ function writeInstructions() {
     "",
     "Then run on the server:",
     "1. npm install",
-    "2. node server.js",
+    "2. npm run build:css",
+    "3. npm run start:server",
     "",
-    "Do not run next build on the server.",
+    "This release no longer uses Next.js.",
     "Environment is loaded from .env.production.",
   ].join("\n");
 
