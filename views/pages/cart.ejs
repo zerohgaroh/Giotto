@@ -38,7 +38,7 @@
               <li class="bg-transparent">
                 <div class="flex items-center gap-3 px-1 py-3">
                   <div class="relative h-[4.35rem] w-[5.4rem] shrink-0 overflow-hidden rounded-[0.8rem] bg-giotto-line">
-                    <img :src="line.image" :alt="line.nameRu" class="h-full w-full object-cover" />
+                    <img :src="line.image" :alt="line.nameRu" loading="lazy" decoding="async" class="h-full w-full object-cover" />
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="line-clamp-2 font-sans text-[1rem] font-semibold leading-[1.2] text-giotto-ink" x-text="line.nameRu"></p>

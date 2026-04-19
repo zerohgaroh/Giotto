@@ -125,6 +125,23 @@
     return navigator.clipboard.writeText(value);
   }
 
+  function optimizeMenuImageUrl(url, width) {
+    if (typeof url !== "string" || !url) {
+      return url;
+    }
+
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (!parsed.pathname.includes("/api/uploads/menu/")) {
+        return url;
+      }
+      parsed.searchParams.set("w", String(width));
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
   function reviewPrompt(configId) {
     const config = readJsonScript(configId);
 
@@ -303,13 +320,18 @@
       },
 
       get filteredDishes() {
-        return this.dishes.filter((dish) => {
-          if (dish.available === false) {
-            return false;
-          }
+        return this.dishes
+          .filter((dish) => {
+            if (dish.available === false) {
+              return false;
+            }
 
-          return this.cat === "all" || dish.category === this.cat;
-        });
+            return this.cat === "all" || dish.category === this.cat;
+          })
+          .map((dish) => ({
+            ...dish,
+            image: optimizeMenuImageUrl(dish.image, 640),
+          }));
       },
 
       get totalQty() {
@@ -331,6 +353,7 @@
         const category = this.categories.find((item) => item.id === dish.category);
         this.sheet = {
           ...dish,
+          image: optimizeMenuImageUrl(dish.image, 1200),
           category: category ? category.labelRu : "Меню",
         };
       },
@@ -405,7 +428,7 @@
             return {
               dishId: line.dishId,
               qty: line.qty,
-              image: dish.image,
+              image: optimizeMenuImageUrl(dish.image, 320),
               nameRu: dish.nameRu,
               price: Number(dish.price || 0),
             };
