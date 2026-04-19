@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { appendActivityEvents, parseHistoryCursor, publishActivityEvents, serializeHistoryCursor } from "./activity";
 import { hashPassword } from "./password";
 import { prisma } from "./prisma";
+import { buildGuestTableLink } from "./public-url";
 import {
   ApiError,
   asFloorPlan,
@@ -142,11 +143,20 @@ function resolveTableNode(
   return {
     tableId: table.id,
     label: table.label ?? fallback?.label ?? `Table ${table.id}`,
+    zoneId: fallback?.zoneId,
     shape: table.shape ?? fallback?.shape ?? "square",
     sizePreset: table.sizePreset ?? fallback?.sizePreset ?? "md",
     x: table.floorX ?? fallback?.x ?? defaults.x,
     y: table.floorY ?? fallback?.y ?? defaults.y,
     archivedAt: table.archivedAt?.getTime() ?? undefined,
+  };
+}
+
+function attachZoneFallback(table: ManagerTableNode, zones: FloorZone[]): ManagerTableNode {
+  const fallbackZoneId = zones[0]?.id;
+  return {
+    ...table,
+    zoneId: table.zoneId && zones.some((zone) => zone.id === table.zoneId) ? table.zoneId : fallbackZoneId,
   };
 }
 
@@ -180,7 +190,7 @@ async function getManagerWaiterProfiles(activeOnly: boolean): Promise<WaiterProf
   );
 }
 
-function toManagerTableSummary(table: ManagerTableRecord): ManagerTableSummary {
+function toManagerTableSummary(table: ManagerTableRecord, publicBaseUrl?: string): ManagerTableSummary {
   const session = getActiveSession(table);
   const total = session?.billLines.reduce((sum, line) => sum + line.qty * line.price, 0) ?? 0;
   const activeRequestsCount = session?.requests.filter((request) => !request.resolvedAt).length ?? 0;
@@ -189,10 +199,15 @@ function toManagerTableSummary(table: ManagerTableRecord): ManagerTableSummary {
     ...toHallTable(table),
     activeRequestsCount,
     total,
+    guestLink: buildGuestTableLink(table.id, { publicBaseUrl }),
   };
 }
 
-function toManagerTableDetail(table: ManagerTableRecord, availableWaiters: WaiterProfile[]): ManagerTableDetail {
+function toManagerTableDetail(
+  table: ManagerTableRecord,
+  availableWaiters: WaiterProfile[],
+  publicBaseUrl?: string,
+): ManagerTableDetail {
   const session = getActiveSession(table);
   const billLines = session?.billLines.map(toBillLine) ?? [];
   const requests = session?.requests.filter((request) => !request.resolvedAt).map(toServiceRequest) ?? [];
@@ -211,6 +226,7 @@ function toManagerTableDetail(table: ManagerTableRecord, availableWaiters: Waite
     sessionId: session?.id,
     sessionStartedAt: session?.startedAt.getTime(),
     availableWaiters,
+    guestLink: buildGuestTableLink(table.id, { publicBaseUrl }),
   };
 }
 
@@ -450,13 +466,29 @@ function sanitizeZones(zones: FloorZone[]) {
   }));
 }
 
+function sanitizeTableNodes(tables: UpdateLayoutInput["tables"], zones: FloorZone[]) {
+  const fallbackZoneId = zones[0]?.id;
+  return tables.map((table) => ({
+    tableId: table.tableId,
+    label: table.label?.trim() || null,
+    zoneId:
+      table.zoneId && zones.some((zone) => zone.id === table.zoneId)
+        ? table.zoneId
+        : fallbackZoneId,
+    x: Number(table.x),
+    y: Number(table.y),
+    shape: table.shape,
+    sizePreset: table.sizePreset,
+  }));
+}
+
 async function getLayoutSettings() {
   return prisma.restaurantSettings.findUnique({
     where: { id: 1 },
   });
 }
 
-export async function getManagerHall(managerId: string): Promise<ManagerHallResponse> {
+export async function getManagerHall(managerId: string, publicBaseUrl?: string): Promise<ManagerHallResponse> {
   const manager = await loadManagerProfile(managerId);
   const [waiters, tables] = await Promise.all([
     getManagerWaiterProfiles(true),
@@ -470,23 +502,28 @@ export async function getManagerHall(managerId: string): Promise<ManagerHallResp
   return {
     manager,
     waiters,
-    tables: (tables as ManagerTableRecord[]).map(toManagerTableSummary),
+    tables: (tables as ManagerTableRecord[]).map((table) => toManagerTableSummary(table, publicBaseUrl)),
   };
 }
 
-export async function getManagerTableDetail(managerId: string, tableId: number): Promise<ManagerTableDetail> {
+export async function getManagerTableDetail(
+  managerId: string,
+  tableId: number,
+  publicBaseUrl?: string,
+): Promise<ManagerTableDetail> {
   await ensureManager(managerId);
   const [table, waiters] = await Promise.all([
     getTableRecordForManager(tableId),
     getManagerWaiterProfiles(true),
   ]);
-  return toManagerTableDetail(table, waiters);
+  return toManagerTableDetail(table, waiters, publicBaseUrl);
 }
 
 export async function reassignManagerTable(input: {
   managerId: string;
   tableId: number;
   waiterId?: string;
+  publicBaseUrl?: string;
 }): Promise<ManagerTableDetail> {
   await ensureManager(input.managerId);
   if (input.waiterId) {
@@ -496,7 +533,7 @@ export async function reassignManagerTable(input: {
   const table = await getTableRecordForManager(input.tableId);
   const currentWaiterId = getAssignedWaiterId(table);
   if (currentWaiterId === input.waiterId) {
-    return getManagerTableDetail(input.managerId, input.tableId);
+    return getManagerTableDetail(input.managerId, input.tableId, input.publicBaseUrl);
   }
 
   const now = new Date();
@@ -558,12 +595,13 @@ export async function reassignManagerTable(input: {
   ]);
   publishActivityEvents(events);
 
-  return getManagerTableDetail(input.managerId, input.tableId);
+  return getManagerTableDetail(input.managerId, input.tableId, input.publicBaseUrl);
 }
 
 export async function closeManagerTable(input: {
   managerId: string;
   tableId: number;
+  publicBaseUrl?: string;
 }): Promise<ManagerTableDetail> {
   await ensureManager(input.managerId);
   const table = await getTableRecordForManager(input.tableId);
@@ -638,7 +676,7 @@ export async function closeManagerTable(input: {
   ]);
   publishActivityEvents(events);
 
-  return getManagerTableDetail(input.managerId, input.tableId);
+  return getManagerTableDetail(input.managerId, input.tableId, input.publicBaseUrl);
 }
 
 export async function getManagerHistory(input: {
@@ -1177,7 +1215,7 @@ export async function getManagerLayout(managerId: string): Promise<ManagerLayout
   const archivedTables: ManagerTableNode[] = [];
 
   for (const table of tables) {
-    const node = resolveTableNode(table, fallbackByTableId.get(table.id));
+    const node = attachZoneFallback(resolveTableNode(table, fallbackByTableId.get(table.id)), stored.zones);
     if (table.archivedAt) {
       archivedTables.push(node);
     } else {
@@ -1198,14 +1236,8 @@ export async function updateManagerLayout(input: {
 }): Promise<ManagerLayoutSnapshot> {
   await ensureManager(input.managerId);
 
-  const tables = input.payload.tables.map((table) => ({
-    tableId: table.tableId,
-    label: table.label?.trim() || null,
-    x: Number(table.x),
-    y: Number(table.y),
-    shape: table.shape,
-    sizePreset: table.sizePreset,
-  }));
+  const zones = sanitizeZones(input.payload.zones);
+  const tables = sanitizeTableNodes(input.payload.tables, zones);
 
   await prisma.$transaction(async (tx) => {
     for (const table of tables) {
@@ -1228,12 +1260,13 @@ export async function updateManagerLayout(input: {
           tables: tables.map((table) => ({
             tableId: table.tableId,
             label: table.label ?? undefined,
+            zoneId: table.zoneId,
             x: table.x,
             y: table.y,
             shape: table.shape,
             sizePreset: table.sizePreset,
           })),
-          zones: sanitizeZones(input.payload.zones),
+          zones,
         },
       },
       create: {
@@ -1243,12 +1276,13 @@ export async function updateManagerLayout(input: {
           tables: tables.map((table) => ({
             tableId: table.tableId,
             label: table.label ?? undefined,
+            zoneId: table.zoneId,
             x: table.x,
             y: table.y,
             shape: table.shape,
             sizePreset: table.sizePreset,
           })),
-          zones: sanitizeZones(input.payload.zones),
+          zones,
         },
       },
     });
@@ -1286,6 +1320,53 @@ export async function createManagerTable(input: {
       sizePreset: input.payload?.sizePreset ?? "md",
       floorX: input.payload?.x ?? defaults.x,
       floorY: input.payload?.y ?? defaults.y,
+    },
+  });
+
+  const settings = await getLayoutSettings();
+  const stored = asFloorPlan(settings?.floorPlan);
+  const fallbackZoneId = stored.zones[0]?.id;
+  const zoneId =
+    input.payload?.zoneId && stored.zones.some((zone) => zone.id === input.payload?.zoneId)
+      ? input.payload.zoneId
+      : fallbackZoneId;
+
+  await prisma.restaurantSettings.upsert({
+    where: { id: 1 },
+    update: {
+      floorPlan: {
+        tables: [
+          ...stored.tables.filter((table) => table.tableId !== tableId),
+          {
+            tableId,
+            label: input.payload?.label?.trim() || `Table ${tableId}`,
+            zoneId,
+            x: input.payload?.x ?? defaults.x,
+            y: input.payload?.y ?? defaults.y,
+            shape: input.payload?.shape ?? "square",
+            sizePreset: input.payload?.sizePreset ?? "md",
+          },
+        ],
+        zones: stored.zones,
+      },
+    },
+    create: {
+      id: 1,
+      managerSoundEnabled: true,
+      floorPlan: {
+        tables: [
+          {
+            tableId,
+            label: input.payload?.label?.trim() || `Table ${tableId}`,
+            zoneId,
+            x: input.payload?.x ?? defaults.x,
+            y: input.payload?.y ?? defaults.y,
+            shape: input.payload?.shape ?? "square",
+            sizePreset: input.payload?.sizePreset ?? "md",
+          },
+        ],
+        zones: stored.zones,
+      },
     },
   });
 

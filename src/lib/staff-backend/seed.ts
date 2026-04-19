@@ -1,6 +1,7 @@
 import { DEFAULT_RESTAURANT_PROFILE, DISHES, MENU_CATEGORIES } from "@/lib/menu-data";
 import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
 import { WAITER_SEED_ACCOUNTS } from "@/lib/waiter-data";
+import { maybeRunStaffBackendMaintenance } from "./maintenance";
 import { hashPassword } from "./password";
 import { prisma } from "./prisma";
 
@@ -317,6 +318,7 @@ export async function ensureStaffBackendReady() {
     globalThis.__giottoSeedPromise = seedDatabase();
   }
   await globalThis.__giottoSeedPromise;
+  await maybeRunStaffBackendMaintenance();
 }
 
 export async function resetStaffSeedData() {

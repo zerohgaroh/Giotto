@@ -48,6 +48,7 @@ export type FloorZone = {
 export type FloorTableNode = {
   tableId: number;
   label?: string;
+  zoneId?: string;
   x: number;
   y: number;
   shape: FloorTableShape;
@@ -92,6 +93,16 @@ export type ReviewPrompt = {
   waiterId?: string;
   createdAt: number;
   expiresAt: number;
+};
+
+export type GuestTableLink = {
+  tableId: number;
+  accessKey: string;
+  shortPath: string;
+  tablePath: string;
+  menuPath: string;
+  waiterPath: string;
+  url: string;
 };
 
 export type CooldownState = {
@@ -297,6 +308,7 @@ export type StaffBootstrap = {
 export type ManagerTableSummary = HallTable & {
   activeRequestsCount: number;
   total: number;
+  guestLink: GuestTableLink;
 };
 
 export type ManagerHallResponse = {
@@ -316,6 +328,7 @@ export type ManagerTableDetail = {
   sessionId?: string;
   sessionStartedAt?: number;
   availableWaiters: WaiterProfile[];
+  guestLink: GuestTableLink;
 };
 
 export type ManagerHistoryEntry = {
@@ -411,6 +424,7 @@ export type UpdateLayoutInput = {
   tables: Array<{
     tableId: number;
     label?: string;
+    zoneId?: string;
     x: number;
     y: number;
     shape: FloorTableShape;

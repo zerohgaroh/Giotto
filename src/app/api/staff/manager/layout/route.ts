@@ -24,8 +24,9 @@ export async function PATCH(request: Request) {
         payload: {
           tables: Array.isArray(body.tables)
             ? body.tables.map((table: Record<string, unknown>) => ({
-                tableId: Number(table.tableId),
+              tableId: Number(table.tableId),
                 label: table.label ? String(table.label) : undefined,
+                zoneId: table.zoneId ? String(table.zoneId) : undefined,
                 x: Number(table.x ?? 0),
                 y: Number(table.y ?? 0),
                 shape: table.shape === "round" || table.shape === "rect" ? table.shape : "square",

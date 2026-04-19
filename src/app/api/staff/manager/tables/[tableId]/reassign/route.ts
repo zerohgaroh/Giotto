@@ -19,10 +19,10 @@ export async function POST(
         managerId: session.userId,
         tableId: parseTableId(tableId),
         waiterId: typeof body.waiterId === "string" && body.waiterId.trim() ? body.waiterId.trim() : undefined,
+        publicBaseUrl: new URL(request.url).origin,
       }),
     );
   } catch (error) {
     return toErrorResponse(error);
   }
 }
-

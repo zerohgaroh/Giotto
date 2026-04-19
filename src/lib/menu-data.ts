@@ -3,20 +3,18 @@ import type { Dish, MenuCategory, RestaurantProfile } from "./types";
 export const DEFAULT_RESTAURANT_PROFILE: RestaurantProfile = {
   name: "Giotto",
   subtitle: "Ristorante · Table Service",
-  description:
-    "Меню и сервис за столом. Всё открывается сразу после касания NFC-карточки.",
+  description: "Меню и сервис за столом. Всё открывается сразу после касания NFC-карточки.",
   logo: "/brand/giotto-logo.png",
-  banner:
-    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1600&q=85",
+  banner: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1600&q=85",
   wifiName: "Giotto-Guest",
   wifiPassword: "buonappetito",
 };
 
 export const MENU_CATEGORIES: MenuCategory[] = [
-  { id: "antipasti", labelRu: "Закуски", icon: "🥗" },
-  { id: "primi", labelRu: "Паста", icon: "🍝" },
-  { id: "dolci", labelRu: "Десерты", icon: "🍰" },
-  { id: "bevande", labelRu: "Напитки", icon: "🍷" },
+  { id: "antipasti", labelRu: "Закуски" },
+  { id: "primi", labelRu: "Паста" },
+  { id: "dolci", labelRu: "Десерты" },
+  { id: "bevande", labelRu: "Напитки" },
 ];
 
 export const DISHES: Dish[] = [
@@ -32,8 +30,7 @@ export const DISHES: Dish[] = [
     badgeLabel: "Antipasto",
     badgeTone: "navy",
     available: true,
-    image:
-      "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=800&q=85",
+    image: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=800&q=85",
   },
   {
     id: "burrata",
@@ -64,8 +61,7 @@ export const DISHES: Dish[] = [
     badgeTone: "gold",
     highlight: true,
     available: true,
-    image:
-      "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=85",
+    image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=85",
   },
   {
     id: "risotto",
@@ -85,7 +81,7 @@ export const DISHES: Dish[] = [
   {
     id: "tiramisu",
     category: "dolci",
-    nameIt: "Tiramisù",
+    nameIt: "Tiramisu",
     nameRu: "Тирамису",
     description: "Маскарпоне, савоярди, эспрессо, какао.",
     price: 72000,
@@ -109,8 +105,7 @@ export const DISHES: Dish[] = [
     badgeLabel: "Нежный вкус",
     badgeTone: "sage",
     available: true,
-    image:
-      "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=85",
+    image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=85",
   },
   {
     id: "espresso",
@@ -124,8 +119,7 @@ export const DISHES: Dish[] = [
     badgeLabel: "Italia",
     badgeTone: "navy",
     available: true,
-    image:
-      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=85",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=85",
   },
   {
     id: "aperol",
@@ -139,11 +133,10 @@ export const DISHES: Dish[] = [
     badgeLabel: "Aperitivo",
     badgeTone: "blush",
     available: true,
-    image:
-      "https://images.unsplash.com/photo-1560512823-829485b8bf24?w=800&q=85",
+    image: "https://images.unsplash.com/photo-1560512823-829485b8bf24?w=800&q=85",
   },
 ];
 
 export function getDishById(id: string, dishes: Dish[] = DISHES) {
-  return dishes.find((d) => d.id === id);
+  return dishes.find((dish) => dish.id === id);
 }

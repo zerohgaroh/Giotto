@@ -14,6 +14,7 @@ export async function POST(request: Request) {
         managerId: session.userId,
         payload: {
           ...(body.label ? { label: String(body.label) } : {}),
+          ...(body.zoneId ? { zoneId: String(body.zoneId) } : {}),
           ...(body.shape ? { shape: body.shape } : {}),
           ...(body.sizePreset ? { sizePreset: body.sizePreset } : {}),
           ...(body.x !== undefined ? { x: Number(body.x) } : {}),

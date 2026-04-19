@@ -13,9 +13,10 @@ export async function GET(
   try {
     const session = await requireManagerSession(request);
     const { tableId } = await params;
-    return noStoreJson(await getManagerTableDetail(session.userId, parseTableId(tableId)));
+    return noStoreJson(
+      await getManagerTableDetail(session.userId, parseTableId(tableId), new URL(request.url).origin),
+    );
   } catch (error) {
     return toErrorResponse(error);
   }
 }
-

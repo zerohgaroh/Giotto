@@ -17,6 +17,7 @@ export async function POST(
       await closeManagerTable({
         managerId: session.userId,
         tableId: parseTableId(tableId),
+        publicBaseUrl: new URL(request.url).origin,
       }),
     );
   } catch (error) {

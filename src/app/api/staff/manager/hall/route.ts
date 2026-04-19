@@ -8,9 +8,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const session = await requireManagerSession(request);
-    return noStoreJson(await getManagerHall(session.userId));
+    return noStoreJson(await getManagerHall(session.userId, new URL(request.url).origin));
   } catch (error) {
     return toErrorResponse(error);
   }
 }
-

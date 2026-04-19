@@ -17,6 +17,57 @@ function tableIdFromPath(pathname: string): string | null {
   return normalizeTableId(segments[1]);
 }
 
+function isPrivateDevHost(hostname: string) {
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  if (/^10\./.test(hostname)) return true;
+  if (/^192\.168\./.test(hostname)) return true;
+
+  const octets = hostname.split(".");
+  if (octets.length === 4 && octets.every((part) => /^\d+$/.test(part))) {
+    const first = Number(octets[0]);
+    const second = Number(octets[1]);
+    if (first === 172 && second >= 16 && second <= 31) return true;
+  }
+
+  return false;
+}
+
+function getAllowedCorsOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return null;
+
+  try {
+    const url = new URL(origin);
+    if (isPrivateDevHost(url.hostname)) return origin;
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function appendVary(current: string | null, next: string) {
+  if (!current) return next;
+  const values = current
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!values.includes(next)) values.push(next);
+  return values.join(", ");
+}
+
+function applyCors(request: NextRequest, response: NextResponse) {
+  const origin = getAllowedCorsOrigin(request);
+  if (!origin) return response;
+
+  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  response.headers.set("Vary", appendVary(response.headers.get("Vary"), "Origin"));
+
+  return response;
+}
+
 /**
  * In dev, Safari often keeps a cached HTML document that still references old
  * hashed `/_next/static/*` files after a restart → red rows in Network, no CSS/JS.
@@ -24,6 +75,14 @@ function tableIdFromPath(pathname: string): string | null {
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/api/")) {
+    if (request.method === "OPTIONS") {
+      return applyNoCacheInDev(applyCors(request, new NextResponse(null, { status: 204 })));
+    }
+
+    return applyNoCacheInDev(applyCors(request, NextResponse.next()));
+  }
 
   if (pathname.startsWith("/table/")) {
     const tableId = tableIdFromPath(pathname);
@@ -40,5 +99,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/guest", "/table/:path*", "/t/:path*", "/waiter/:path*"],
+  matcher: ["/", "/guest", "/table/:path*", "/t/:path*", "/waiter/:path*", "/api/:path*"],
 };

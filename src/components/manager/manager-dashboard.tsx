@@ -1128,7 +1128,6 @@ export function ManagerDashboard() {
                             : "border-giotto-line text-giotto-muted",
                         )}
                       >
-                        {category.icon ? `${category.icon} ` : ""}
                         {category.labelRu}
                       </button>
                     ))}
@@ -1270,7 +1269,6 @@ export function ManagerDashboard() {
                           </div>
                           <div className="text-xs text-giotto-muted">
                             <p>
-                              {category?.icon ? `${category.icon} ` : ""}
                               {category?.labelRu ?? dish.category}
                             </p>
                             <p>{dish.portion}</p>

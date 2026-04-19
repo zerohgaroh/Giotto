@@ -8,8 +8,19 @@ export function readBearerToken(raw: string | null | undefined) {
   return match?.[1];
 }
 
-export async function requireStaffSession(request: Request): Promise<StaffSession> {
-  const token = readBearerToken(request.headers.get("authorization"));
+export function readAccessTokenFromRequest(request: Request, options?: { allowQuery?: boolean }) {
+  const bearer = readBearerToken(request.headers.get("authorization"));
+  if (bearer) return bearer;
+
+  if (!options?.allowQuery) return undefined;
+
+  const url = new URL(request.url);
+  const queryToken = url.searchParams.get("accessToken")?.trim();
+  return queryToken || undefined;
+}
+
+export async function requireStaffSession(request: Request, options?: { allowQuery?: boolean }): Promise<StaffSession> {
+  const token = readAccessTokenFromRequest(request, options);
   const session = await getStaffSession(token);
   if (!session) {
     throw new ApiError(401, "Staff authentication is required");

@@ -1,1 +1,11 @@
-{}
+{
+  "/guest/page": "app/guest/page.js",
+  "/api/staff/me/route": "app/api/staff/me/route.js",
+  "/api/staff/auth/refresh/route": "app/api/staff/auth/refresh/route.js",
+  "/api/staff/manager/history/route": "app/api/staff/manager/history/route.js",
+  "/api/staff/manager/hall/route": "app/api/staff/manager/hall/route.js",
+  "/api/staff/realtime/stream/route": "app/api/staff/realtime/stream/route.js",
+  "/api/staff/manager/waiters/route": "app/api/staff/manager/waiters/route.js",
+  "/api/staff/manager/menu/route": "app/api/staff/manager/menu/route.js",
+  "/api/staff/manager/layout/route": "app/api/staff/manager/layout/route.js"
+}

@@ -264,6 +264,7 @@ export function asFloorPlan(value: Prisma.JsonValue | null | undefined): {
       return {
         tableId,
         label: `Стол ${tableId}`,
+        zoneId: tableId <= 15 ? "zone-main" : "zone-terrace",
         x: 12 + col * 20,
         y: 16 + row * 17,
         shape: (col % 3 === 0 ? "round" : col % 2 === 0 ? "rect" : "square") as FloorTableShape,
@@ -281,6 +282,7 @@ export function asFloorPlan(value: Prisma.JsonValue | null | undefined): {
     tables: Array<{
       tableId?: number;
       label?: string;
+      zoneId?: string;
       x?: number;
       y?: number;
       shape?: FloorTableShape | string;
@@ -300,6 +302,7 @@ export function asFloorPlan(value: Prisma.JsonValue | null | undefined): {
     tables: raw.tables.map((table) => ({
       tableId: Number(table.tableId),
       label: typeof table.label === "string" ? table.label : undefined,
+      zoneId: typeof table.zoneId === "string" ? table.zoneId : undefined,
       x: Number(table.x ?? 0),
       y: Number(table.y ?? 0),
       shape: (table.shape === "round" || table.shape === "rect" ? table.shape : "square") as FloorTableShape,

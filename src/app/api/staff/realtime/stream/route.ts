@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   let waiterId: string | null = null;
 
   try {
-    const session = await requireStaffSession(request);
+    const session = await requireStaffSession(request, { allowQuery: true });
     if (session.role === "waiter") {
       waiterId = session.userId;
       const waiter = await getWaiterById(session.userId);
