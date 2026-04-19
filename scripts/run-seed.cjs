@@ -4,6 +4,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 const rootDir = path.resolve(__dirname, "..");
+const compiledSeedFile = path.join(rootDir, "dist", "prisma", "seed.js");
 
 function loadEnvFiles() {
   const mode = process.env.NODE_ENV || "development";
@@ -32,10 +33,12 @@ function resolveTsxCli() {
   }
 }
 
-const tsxCli = resolveTsxCli();
-const seedFile = path.join(rootDir, "prisma", "seed.ts");
+const seedArgs = process.argv.slice(2);
+const commandArgs = fs.existsSync(compiledSeedFile)
+  ? [compiledSeedFile, ...seedArgs]
+  : [resolveTsxCli(), path.join(rootDir, "prisma", "seed.ts"), ...seedArgs];
 
-execFileSync(process.execPath, [tsxCli, seedFile, ...process.argv.slice(2)], {
+execFileSync(process.execPath, commandArgs, {
   cwd: rootDir,
   stdio: "inherit",
   env: process.env,
