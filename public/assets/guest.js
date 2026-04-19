@@ -35,6 +35,14 @@
     return `${new Intl.NumberFormat("ru-RU").format(Number(sum || 0))} so'm`;
   }
 
+  function getSessionStorage() {
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
+  }
+
   function storageKey(tableId) {
     return `giotto:guest-cart:${String(tableId || "").trim()}`;
   }
@@ -57,12 +65,13 @@
   }
 
   function readCart(tableId) {
-    if (!window.sessionStorage) {
+    const storage = getSessionStorage();
+    if (!storage) {
       return [];
     }
 
     try {
-      const raw = window.sessionStorage.getItem(storageKey(tableId));
+      const raw = storage.getItem(storageKey(tableId));
       if (!raw) return [];
       return normalizeCartLines(JSON.parse(raw));
     } catch {
@@ -71,13 +80,14 @@
   }
 
   function writeCart(tableId, lines) {
-    if (!window.sessionStorage) {
+    const storage = getSessionStorage();
+    if (!storage) {
       return normalizeCartLines(lines);
     }
 
     const normalized = normalizeCartLines(lines);
     try {
-      window.sessionStorage.setItem(storageKey(tableId), JSON.stringify(normalized));
+      storage.setItem(storageKey(tableId), JSON.stringify(normalized));
     } catch {
       // ignore storage failures
     }
@@ -85,12 +95,13 @@
   }
 
   function clearCart(tableId) {
-    if (!window.sessionStorage) {
+    const storage = getSessionStorage();
+    if (!storage) {
       return;
     }
 
     try {
-      window.sessionStorage.removeItem(storageKey(tableId));
+      storage.removeItem(storageKey(tableId));
     } catch {
       // ignore storage failures
     }
@@ -588,11 +599,19 @@
     };
   }
 
-  document.addEventListener("alpine:init", () => {
+  function registerAlpineData() {
+    if (!window.Alpine || window.Alpine.__giottoGuestRegistered) {
+      return;
+    }
+
     window.Alpine.data("reviewPrompt", reviewPrompt);
     window.Alpine.data("guestHub", guestHub);
     window.Alpine.data("menuPage", menuPage);
     window.Alpine.data("cartPage", cartPage);
     window.Alpine.data("waiterPage", waiterPage);
-  });
+    window.Alpine.__giottoGuestRegistered = true;
+  }
+
+  document.addEventListener("alpine:init", registerAlpineData);
+  registerAlpineData();
 })();
