@@ -75,7 +75,7 @@ async function main() {
     prepareDatabase();
 
     console.log("[startup] Creating Express application");
-    const { createApp } = await import("./src/server/app.js");
+    const { createApp } = await import("./dist/src/server/app.js");
     const app = await createApp();
     console.log("[startup] Express application created");
 

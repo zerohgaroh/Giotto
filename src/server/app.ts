@@ -1,7 +1,7 @@
 import cookieParser from "cookie-parser";
 import express from "express";
 import path from "path";
-import { maybeRunStaffBackendMaintenance } from "@/lib/staff-backend/maintenance";
+import { maybeRunStaffBackendMaintenance } from "../lib/staff-backend/maintenance";
 import { createApiRouter } from "./routes/api";
 import { createWebRouter } from "./routes/web";
 import { serializeForScript, wantsHtml } from "./http";

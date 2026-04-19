@@ -1,19 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import multer from "multer";
-import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "@/lib/staff-backend/auth";
-import { getStaffBootstrap } from "@/lib/staff-backend/bootstrap";
-import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "@/lib/staff-backend/guest";
-import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable } from "@/lib/staff-backend/manager";
-import { readManagerMenuImage, saveManagerMenuImage } from "@/lib/staff-backend/menu-images";
-import { ApiError } from "@/lib/staff-backend/projections";
-import { parseOptionalInt, parseTableId } from "@/lib/staff-backend/route-parsers";
-import { getRestaurantData } from "@/lib/staff-backend/restaurant";
-import { applyWaiterAssignmentChange, canWaiterReceiveRealtimeEvent } from "@/lib/staff-backend/realtime-access";
-import { getWaiterQueue, getWaiterShiftSummary, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, registerPushDevice } from "@/lib/staff-backend/waiter";
-import { getHallProjection } from "@/lib/staff-backend/projections";
-import { resetStaffSeedData } from "@/lib/staff-backend/seed";
-import { subscribeRealtimeEvents } from "@/lib/waiter-backend/realtime";
+import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "../../lib/staff-backend/auth";
+import { getStaffBootstrap } from "../../lib/staff-backend/bootstrap";
+import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "../../lib/staff-backend/guest";
+import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable } from "../../lib/staff-backend/manager";
+import { readManagerMenuImage, saveManagerMenuImage } from "../../lib/staff-backend/menu-images";
+import { ApiError } from "../../lib/staff-backend/projections";
+import { parseOptionalInt, parseTableId } from "../../lib/staff-backend/route-parsers";
+import { getRestaurantData } from "../../lib/staff-backend/restaurant";
+import { applyWaiterAssignmentChange, canWaiterReceiveRealtimeEvent } from "../../lib/staff-backend/realtime-access";
+import { getWaiterQueue, getWaiterShiftSummary, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, registerPushDevice } from "../../lib/staff-backend/waiter";
+import { getHallProjection } from "../../lib/staff-backend/projections";
+import { resetStaffSeedData } from "../../lib/staff-backend/seed";
+import { subscribeRealtimeEvents } from "../../lib/waiter-backend/realtime";
 import { requireStaffAuth } from "../auth";
 import { asyncHandler, getAbsoluteUrl, getRequestOrigin, jsonNoStore, sendApiError, toFetchRequest } from "../http";
 
@@ -35,8 +35,8 @@ function asStringArray(value: unknown) {
 function asNumberArray(value: unknown) {
   return Array.isArray(value)
     ? value
-        .map((entry) => Number(entry))
-        .filter((entry) => Number.isInteger(entry) && entry > 0)
+      .map((entry) => Number(entry))
+      .filter((entry) => Number.isInteger(entry) && entry > 0)
     : [];
 }
 
@@ -576,32 +576,32 @@ export function createApiRouter() {
             payload: {
               tables: Array.isArray(body.tables)
                 ? body.tables.map((table: unknown) => ({
-                    tableId: Number((table as Record<string, unknown>).tableId),
-                    label: (table as Record<string, unknown>).label ? String((table as Record<string, unknown>).label) : undefined,
-                    zoneId: (table as Record<string, unknown>).zoneId ? String((table as Record<string, unknown>).zoneId) : undefined,
-                    x: Number((table as Record<string, unknown>).x ?? 0),
-                    y: Number((table as Record<string, unknown>).y ?? 0),
-                    shape:
-                      (table as Record<string, unknown>).shape === "round" ||
+                  tableId: Number((table as Record<string, unknown>).tableId),
+                  label: (table as Record<string, unknown>).label ? String((table as Record<string, unknown>).label) : undefined,
+                  zoneId: (table as Record<string, unknown>).zoneId ? String((table as Record<string, unknown>).zoneId) : undefined,
+                  x: Number((table as Record<string, unknown>).x ?? 0),
+                  y: Number((table as Record<string, unknown>).y ?? 0),
+                  shape:
+                    (table as Record<string, unknown>).shape === "round" ||
                       (table as Record<string, unknown>).shape === "rect"
-                        ? ((table as Record<string, unknown>).shape as "round" | "rect")
-                        : "square",
-                    sizePreset:
-                      (table as Record<string, unknown>).sizePreset === "sm" ||
+                      ? ((table as Record<string, unknown>).shape as "round" | "rect")
+                      : "square",
+                  sizePreset:
+                    (table as Record<string, unknown>).sizePreset === "sm" ||
                       (table as Record<string, unknown>).sizePreset === "lg"
-                        ? ((table as Record<string, unknown>).sizePreset as "sm" | "lg")
-                        : "md",
-                    }))
+                      ? ((table as Record<string, unknown>).sizePreset as "sm" | "lg")
+                      : "md",
+                }))
                 : [],
               zones: Array.isArray(body.zones)
                 ? body.zones.map((zone: unknown) => ({
-                    id: String((zone as Record<string, unknown>).id ?? ""),
-                    label: String((zone as Record<string, unknown>).label ?? ""),
-                    x: Number((zone as Record<string, unknown>).x ?? 0),
-                    y: Number((zone as Record<string, unknown>).y ?? 0),
-                    width: Number((zone as Record<string, unknown>).width ?? 0),
-                    height: Number((zone as Record<string, unknown>).height ?? 0),
-                  }))
+                  id: String((zone as Record<string, unknown>).id ?? ""),
+                  label: String((zone as Record<string, unknown>).label ?? ""),
+                  x: Number((zone as Record<string, unknown>).x ?? 0),
+                  y: Number((zone as Record<string, unknown>).y ?? 0),
+                  width: Number((zone as Record<string, unknown>).width ?? 0),
+                  height: Number((zone as Record<string, unknown>).height ?? 0),
+                }))
                 : [],
             },
           }),
@@ -790,8 +790,8 @@ export function createApiRouter() {
           dishIdsByCategory:
             body.dishIdsByCategory && typeof body.dishIdsByCategory === "object" && !Array.isArray(body.dishIdsByCategory)
               ? Object.fromEntries(
-                  Object.entries(body.dishIdsByCategory as Record<string, unknown>).map(([key, value]) => [key, asStringArray(value)]),
-                )
+                Object.entries(body.dishIdsByCategory as Record<string, unknown>).map(([key, value]) => [key, asStringArray(value)]),
+              )
               : undefined,
         }),
       );

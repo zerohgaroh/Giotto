@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
-import { publishRealtimeEvent } from "@/lib/waiter-backend/realtime";
+import { publishRealtimeEvent } from "../waiter-backend/realtime";
 import type { ActivityActorRole, ManagerHistoryEntry, RealtimeEventType } from "./types";
 
 export type ActivityEventInput = {
