@@ -36,7 +36,7 @@
               <article class="motion-surface group flex flex-col overflow-hidden rounded-[1.35rem] border border-[#ece5d8] bg-white shadow-[0_8px_22px_rgba(8,29,54,0.08)] transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card">
                 <button type="button" class="text-left" @click="openDish(dish.id)">
                   <div class="relative aspect-[1.12] w-full overflow-hidden bg-giotto-line">
-                    <img :src="dish.image" :alt="dish.nameRu" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                    <img :src="dish.image" :alt="dish.nameRu" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                   </div>
                   <div class="flex min-h-[5.7rem] flex-col px-3 pb-2.5 pt-2.5">
                     <h2 class="line-clamp-2 min-h-[2.65rem] font-sans text-[1.06rem] font-semibold leading-[1.24] tracking-[-0.01em] text-giotto-ink" x-text="dish.nameRu"></h2>
@@ -76,7 +76,7 @@
             <template x-if="sheet">
               <div>
                 <div class="relative aspect-[1.2] w-full overflow-hidden rounded-[1.2rem] bg-giotto-line">
-                  <img :src="sheet.image" :alt="sheet.nameRu" class="h-full w-full object-cover" />
+                  <img :src="sheet.image" :alt="sheet.nameRu" loading="eager" decoding="async" class="h-full w-full object-cover" />
                 </div>
                 <div class="mt-4">
                   <p class="text-[11px] uppercase tracking-[0.18em] text-giotto-muted" x-text="sheet.category"></p>

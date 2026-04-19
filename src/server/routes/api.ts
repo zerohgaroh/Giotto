@@ -216,7 +216,10 @@ export function createApiRouter() {
   api.get(
     "/uploads/menu/:filename",
     asyncHandler(async (req, res) => {
-      const image = await readManagerMenuImage(paramString(req.params.filename));
+      const rawWidth = typeof req.query.w === "string" ? Number(req.query.w) : null;
+      const image = await readManagerMenuImage(paramString(req.params.filename), {
+        width: Number.isFinite(rawWidth) ? rawWidth : null,
+      });
       res.setHeader("Content-Type", image.mimeType);
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       res.status(200).send(image.body);
