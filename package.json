@@ -19,7 +19,7 @@
     "build:css": "tailwindcss -i ./src/styles/main.css -o ./public/assets/app.css --minify",
     "build": "npm run build:css",
     "start": "npm run build:css && npm run start:server",
-    "start:server": "cross-env NODE_ENV=production tsx server.js",
+    "start:server": "cross-env NODE_ENV=production node dist/server.js",
     "lint": "tsc --noEmit",
     "postinstall": "node -e \"const { execFileSync } = require('child_process'); const fs = require('fs'); const path = require('path'); const root = path.resolve(process.env.INIT_CWD || process.cwd()); const script = path.join(root, 'scripts', 'prisma-cli.cjs'); if (!fs.existsSync(script)) { console.log('[postinstall] Prisma runner not found, skipping generate:', script); process.exit(0); } execFileSync(process.execPath, [script, 'generate'], { cwd: root, stdio: 'inherit', env: process.env });\"",
     "test": "tsx --test tests/**/*.test.ts"
