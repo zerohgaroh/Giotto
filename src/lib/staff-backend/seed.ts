@@ -343,7 +343,6 @@ async function seedSessionNotes(tx) {
     });
   }
 }
-}
 
 async function seedDatabase() {
   const [userCount, tableCount, profileCount] = await Promise.all([
