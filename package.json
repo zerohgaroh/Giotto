@@ -26,10 +26,12 @@
     "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^6.19.3",
+    "@prisma/client": "^6.7.0",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@prisma/client": "^6.7.0",
     "autoprefixer": "^10.4.27",
     "clsx": "^2.1.1",
     "image-size": "^2.0.2",
