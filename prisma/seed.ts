@@ -1,4 +1,4 @@
-import { ensureStaffBackendReady, resetStaffSeedData } from "../src/lib/staff-backend/seed";
+import { resetStaffSeedData, runStaffBackendSeed } from "../src/lib/staff-backend/seed";
 
 async function main() {
   if (process.argv.includes("--reset")) {
@@ -6,7 +6,7 @@ async function main() {
     return;
   }
 
-  await ensureStaffBackendReady();
+  await runStaffBackendSeed();
 }
 
 main()

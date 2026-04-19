@@ -60,7 +60,7 @@ function prepareDatabase() {
     runCommand('Applying database bootstrap', ['scripts/bootstrap-db.cjs']);
 
     if (process.env.GIOTTO_SEED_ON_BOOT !== '0') {
-        runCommand('Seeding initial data', ['scripts/prisma-cli.cjs', 'db', 'seed']);
+        runCommand('Seeding initial data', ['scripts/run-seed.cjs']);
     }
 }
 

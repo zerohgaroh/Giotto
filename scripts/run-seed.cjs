@@ -1,7 +1,10 @@
 const { execFileSync } = require("child_process");
 const path = require("path");
+const { loadEnvConfig } = require("@next/env");
 
 const rootDir = path.resolve(__dirname, "..");
+loadEnvConfig(rootDir, process.env.NODE_ENV !== "production");
+
 function resolveTsxCli() {
   try {
     return require.resolve("tsx/cli", { paths: [rootDir] });

@@ -313,11 +313,28 @@ async function seedDatabase() {
   });
 }
 
+function shouldAutoSeedRuntime() {
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  return process.env.GIOTTO_SEED_ON_BOOT === "1" || process.env.GIOTTO_RUNTIME_SEED === "1";
+}
+
+export async function runStaffBackendSeed() {
+  globalThis.__giottoSeedPromise = seedDatabase();
+  await globalThis.__giottoSeedPromise;
+}
+
 export async function ensureStaffBackendReady() {
-  if (!globalThis.__giottoSeedPromise) {
+  if (shouldAutoSeedRuntime() && !globalThis.__giottoSeedPromise) {
     globalThis.__giottoSeedPromise = seedDatabase();
   }
-  await globalThis.__giottoSeedPromise;
+
+  if (globalThis.__giottoSeedPromise) {
+    await globalThis.__giottoSeedPromise;
+  }
+
   await maybeRunStaffBackendMaintenance();
 }
 
@@ -345,5 +362,5 @@ export async function resetStaffSeedData() {
   });
 
   globalThis.__giottoSeedPromise = undefined;
-  await ensureStaffBackendReady();
+  await runStaffBackendSeed();
 }
