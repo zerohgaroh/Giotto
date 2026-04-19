@@ -14,6 +14,7 @@
     "db:deploy": "node scripts/bootstrap-db.cjs",
     "db:push": "node scripts/prisma-cli.cjs db push",
     "db:seed": "node scripts/run-seed.cjs",
+    "db:seed:menu": "node scripts/run-seed.cjs --menu-from-array",
     "db:prepare": "npm run db:deploy && npm run db:seed",
     "db:reset": "node scripts/prisma-cli.cjs db push --force-reset && node scripts/run-seed.cjs --reset",
     "build:server": "tsc -p tsconfig.json",
