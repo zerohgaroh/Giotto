@@ -7,7 +7,7 @@ const dotenv = require("dotenv");
 const rootDir = fs.existsSync(path.join(__dirname, "package.json"))
     ? __dirname
     : path.resolve(__dirname, "..");
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "5000", 10);
 const host = process.env.HOST || "0.0.0.0";
 const dev = process.env.NODE_ENV !== "production";
 const nodeCommand = process.execPath;
