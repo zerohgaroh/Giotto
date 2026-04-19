@@ -13,12 +13,18 @@ const dev = process.env.NODE_ENV !== "production";
 const nodeCommand = process.execPath;
 
 function resolveAppModulePath() {
+    const sourceAppPath = path.join(rootDir, "src", "server", "app.ts");
     const compiledAppPath = path.join(rootDir, "dist", "src", "server", "app.js");
+
+    // In development always prefer source files so hot-reloads pick up latest edits.
+    if (dev && fs.existsSync(sourceAppPath)) {
+        return path.relative(__dirname, sourceAppPath).replace(/\\/g, "/").replace(/^[^./]/, "./$&");
+    }
+
     if (fs.existsSync(compiledAppPath)) {
         return path.relative(__dirname, compiledAppPath).replace(/\\/g, "/").replace(/^[^./]/, "./$&");
     }
 
-    const sourceAppPath = path.join(rootDir, "src", "server", "app.ts");
     if (fs.existsSync(sourceAppPath)) {
         return path.relative(__dirname, sourceAppPath).replace(/\\/g, "/").replace(/^[^./]/, "./$&");
     }

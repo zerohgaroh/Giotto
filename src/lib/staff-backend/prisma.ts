@@ -12,7 +12,7 @@ declare global {
 const prismaPool =
   globalThis.__giottoPrismaPool ??
   new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: resolveDatabaseUrl(process.env.DATABASE_URL),
   });
 
 const adapter = new PrismaPg(prismaPool);
@@ -27,4 +27,17 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") {
   globalThis.__giottoPrisma = prisma;
   globalThis.__giottoPrismaPool = prismaPool;
+}
+
+function resolveDatabaseUrl(input: string | undefined) {
+  if (!input) return input;
+  if (process.env.NODE_ENV !== "development") return input;
+  if (process.env.GIOTTO_FORCE_DOCKER_DB === "1") return input;
+
+  // Local dev often runs outside Docker where `giotto-db` is not resolvable.
+  if (input.includes("@giotto-db:")) {
+    return input.replace("@giotto-db:", "@localhost:");
+  }
+
+  return input;
 }
