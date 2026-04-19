@@ -24,15 +24,15 @@
   body {
     font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
     background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cg stroke='%230a1f4a' stroke-opacity='0.10' stroke-width='1.35'%3E%3Cpath d='M18 46 C32 34 46 58 60 46 C74 34 88 58 102 46'/%3E%3Cpath d='M132 34 C146 22 160 46 174 34 C188 22 202 46 216 34'/%3E%3Cpath d='M246 64 C260 52 274 76 288 64 C302 52 316 76 330 64'/%3E%3Cpath d='M42 118 C56 106 70 130 84 118 C98 106 112 130 126 118'/%3E%3Cpath d='M156 106 C170 94 184 118 198 106 C212 94 226 118 240 106'/%3E%3Cpath d='M268 146 C282 134 296 158 310 146 C324 134 338 158 352 146'/%3E%3Cpath d='M26 188 C40 176 54 200 68 188 C82 176 96 200 110 188'/%3E%3Cpath d='M146 176 C160 164 174 188 188 176 C202 164 216 188 230 176'/%3E%3C/g%3E%3Cg stroke='%23b8924a' stroke-opacity='0.10' stroke-width='1.1'%3E%3Cpath d='M88 74 C102 62 116 86 130 74 C144 62 158 86 172 74'/%3E%3Cpath d='M202 96 C216 84 230 108 244 96 C258 84 272 108 286 96'/%3E%3Cpath d='M78 160 C92 148 106 172 120 160 C134 148 148 172 162 160'/%3E%3Cpath d='M226 200 C240 188 254 212 268 200 C282 188 296 212 310 200'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='560' viewBox='0 0 1440 560'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cg stroke='%230a1f4a' stroke-opacity='0.11' stroke-width='2'%3E%3Cpath d='M-60 62 C 90 22, 240 102, 390 62 C 540 22, 690 102, 840 62 C 990 22, 1140 102, 1290 62 C 1380 38, 1455 74, 1510 62'/%3E%3Cpath d='M-80 166 C 70 126, 220 206, 370 166 C 520 126, 670 206, 820 166 C 970 126, 1120 206, 1270 166 C 1360 142, 1440 178, 1500 166'/%3E%3Cpath d='M-40 270 C 110 230, 260 310, 410 270 C 560 230, 710 310, 860 270 C 1010 230, 1160 310, 1310 270 C 1398 246, 1476 282, 1530 270'/%3E%3Cpath d='M-70 374 C 80 334, 230 414, 380 374 C 530 334, 680 414, 830 374 C 980 334, 1130 414, 1280 374 C 1368 350, 1448 386, 1510 374'/%3E%3Cpath d='M-30 478 C 120 438, 270 518, 420 478 C 570 438, 720 518, 870 478 C 1020 438, 1170 518, 1320 478 C 1405 454, 1480 490, 1538 478'/%3E%3C/g%3E%3Cg stroke='%23b8924a' stroke-opacity='0.10' stroke-width='1.5'%3E%3Cpath d='M-50 114 C 100 74, 250 154, 400 114 C 550 74, 700 154, 850 114 C 1000 74, 1150 154, 1300 114 C 1390 90, 1465 126, 1520 114'/%3E%3Cpath d='M-35 322 C 115 282, 265 362, 415 322 C 565 282, 715 362, 865 322 C 1015 282, 1165 362, 1315 322 C 1402 298, 1478 334, 1535 322'/%3E%3Cpath d='M-45 530 C 105 490, 255 570, 405 530 C 555 490, 705 570, 855 530 C 1005 490, 1155 570, 1305 530 C 1392 506, 1468 542, 1525 530'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
       radial-gradient(circle at top, rgba(184, 146, 74, 0.14), transparent 28%),
       linear-gradient(180deg, #faf8f4 0%, #f3efe6 48%, #f7f3ec 100%);
     background-size:
-      360px 240px,
+      100% 420px,
       auto,
       auto;
     background-position:
-      14px 12px,
+      center 0,
       center top,
       center;
     animation: giotto-lines-float 30s ease-in-out infinite;
@@ -46,19 +46,19 @@
   @keyframes giotto-lines-float {
     0% {
       background-position:
-        14px 12px,
+        center 0,
         center top,
         center;
     }
     50% {
       background-position:
-        32px 30px,
+        center 18px,
         center top,
         center;
     }
     100% {
       background-position:
-        14px 12px,
+        center 0,
         center top,
         center;
     }

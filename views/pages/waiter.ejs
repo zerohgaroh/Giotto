@@ -8,9 +8,32 @@
 
     <div x-data="waiterPage('waiter-page-data')">
       <main
-        class="motion-page mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-8"
+        class="motion-page relative isolate mx-auto flex min-h-dvh max-w-guest flex-col overflow-hidden px-5 pb-8"
         style="padding-top:max(1.25rem,var(--safe-top));padding-bottom:max(1.5rem,var(--safe-bottom));"
       >
+        <div class="pointer-events-none absolute inset-0 -z-10 opacity-45" aria-hidden="true">
+          <svg viewBox="0 0 430 1400" preserveAspectRatio="none" class="h-full w-full">
+            <g fill="none" stroke-linecap="round">
+              <g stroke="rgba(10,31,74,0.12)" stroke-width="1.35">
+                <path d="M-20 120 C 60 92, 140 148, 220 120 C 300 92, 380 148, 460 120"></path>
+                <path d="M-20 300 C 60 272, 140 328, 220 300 C 300 272, 380 328, 460 300"></path>
+                <path d="M-20 480 C 60 452, 140 508, 220 480 C 300 452, 380 508, 460 480"></path>
+                <path d="M-20 660 C 60 632, 140 688, 220 660 C 300 632, 380 688, 460 660"></path>
+                <path d="M-20 840 C 60 812, 140 868, 220 840 C 300 812, 380 868, 460 840"></path>
+                <path d="M-20 1020 C 60 992, 140 1048, 220 1020 C 300 992, 380 1048, 460 1020"></path>
+                <path d="M-20 1200 C 60 1172, 140 1228, 220 1200 C 300 1172, 380 1228, 460 1200"></path>
+                <path d="M-20 1340 C 60 1312, 140 1368, 220 1340 C 300 1312, 380 1368, 460 1340"></path>
+              </g>
+              <g stroke="rgba(184,146,74,0.10)" stroke-width="1.1">
+                <path d="M-20 210 C 60 182, 140 238, 220 210 C 300 182, 380 238, 460 210"></path>
+                <path d="M-20 570 C 60 542, 140 598, 220 570 C 300 542, 380 598, 460 570"></path>
+                <path d="M-20 930 C 60 902, 140 958, 220 930 C 300 902, 380 958, 460 930"></path>
+                <path d="M-20 1290 C 60 1262, 140 1318, 220 1290 C 300 1262, 380 1318, 460 1290"></path>
+              </g>
+            </g>
+          </svg>
+        </div>
+
         <header class="text-center">
           <p class="font-sans text-[clamp(15px,4.2vw,17px)] font-bold tracking-tight text-giotto-navy-deep">Стол <%= tableLabel %></p>
           <p class="mt-1 font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted" x-text="requestType === 'bill' ? 'Запрос счёта' : 'Ожидайте официанта'"></p>
@@ -25,7 +48,7 @@
           </div>
 
           <div class="mx-auto mt-8 flex flex-col items-center">
-            <div class="relative h-[min(68vmin,15rem)] w-[min(68vmin,15rem)]">
+            <div class="relative h-[min(68vmin,15rem)] w-[min(68vmin,15rem)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" :class="requested ? 'scale-100' : 'scale-[0.94]'">
               <svg width="256" height="256" viewBox="0 0 128 128" class="h-[min(68vmin,15rem)] w-[min(68vmin,15rem)] drop-shadow-[0_18px_36px_rgba(8,29,54,0.05)]" aria-hidden="true">
                 <circle cx="64" cy="64" r="50" fill="none" stroke="#dde2ea" stroke-width="10"></circle>
                 <circle
@@ -55,16 +78,16 @@
               </div>
             </div>
 
-            <div class="mt-6 text-center">
-              <template x-if="requested">
-                <div>
+            <div class="mt-6 w-full overflow-hidden text-center transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" :class="requested ? 'h-[6.1rem]' : 'h-[1.25rem]'">
+              <div class="relative h-full">
+                <div class="absolute inset-0 transition-all duration-350 ease-out" :class="requested ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 pointer-events-none'">
                   <p class="font-mono text-[clamp(2.9rem,14vw,3.5rem)] font-semibold tabular-nums tracking-[-0.04em] text-giotto-navy-deep" aria-live="polite" aria-atomic="true" x-text="formatCountdown(remaining)"></p>
                   <span class="mt-1 block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">до повторного вызова</span>
                 </div>
-              </template>
-              <template x-if="!requested">
-                <span class="block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">Таймер начнётся после нажатия</span>
-              </template>
+                <div class="absolute inset-0 transition-all duration-350 ease-out" :class="requested ? '-translate-y-2 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'">
+                  <span class="block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">Таймер начнётся после нажатия</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
