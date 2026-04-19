@@ -43,7 +43,7 @@ function writeInstructions() {
     "",
     "Then run on the server:",
     "1. npm install",
-    "2. npm run build:css",
+    "2. npm run build",
     "3. npm run start:server",
     "",
     "This release no longer uses Next.js.",

@@ -4,11 +4,29 @@ const http = require("http");
 const path = require("path");
 const dotenv = require("dotenv");
 
-const rootDir = __dirname || process.cwd();
+const rootDir = fs.existsSync(path.join(__dirname, "package.json"))
+    ? __dirname
+    : path.resolve(__dirname, "..");
 const port = parseInt(process.env.PORT || "3000", 10);
 const host = process.env.HOST || "0.0.0.0";
 const dev = process.env.NODE_ENV !== "production";
 const nodeCommand = process.execPath;
+
+function resolveAppModulePath() {
+    const compiledAppPath = path.join(rootDir, "dist", "src", "server", "app.js");
+    if (fs.existsSync(compiledAppPath)) {
+        return path.relative(__dirname, compiledAppPath).replace(/\\/g, "/").replace(/^[^./]/, "./$&");
+    }
+
+    const sourceAppPath = path.join(rootDir, "src", "server", "app.ts");
+    if (fs.existsSync(sourceAppPath)) {
+        return path.relative(__dirname, sourceAppPath).replace(/\\/g, "/").replace(/^[^./]/, "./$&");
+    }
+
+    throw new Error(
+        `Unable to find application entrypoint. Checked ${compiledAppPath} and ${sourceAppPath}.`
+    );
+}
 
 function loadEnvFiles() {
     const mode = process.env.NODE_ENV || "development";
@@ -75,7 +93,7 @@ async function main() {
     prepareDatabase();
 
     console.log("[startup] Creating Express application");
-    const { createApp } = await import("./dist/src/server/app.js");
+    const { createApp } = await import(resolveAppModulePath());
     const app = await createApp();
     console.log("[startup] Express application created");
 
