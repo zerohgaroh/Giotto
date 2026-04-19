@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { prisma } from "./prisma";
 import {
   ApiError,
-  computeStatus,
   ensureActiveSession,
   getActiveSession,
   getAssignedTableRecord,
@@ -368,7 +367,6 @@ export async function acknowledgeWaiterTask(input: {
   });
 
   const detail = await loadWaiterTableWithTimeline(input.waiterId, task.tableId);
-  const activeSession = detail.timeline[0]?.payload?.tableSessionId;
   const events = await appendActivityEvents([
     ...(task.sourceRequestId
       ? [

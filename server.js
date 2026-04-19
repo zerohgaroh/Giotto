@@ -12,7 +12,7 @@ const nodeCommand = process.execPath;
 
 function runCommand(label, args) {
     console.log(`[startup] ${label}`);
-    execFileSync(nodeCommand, ['scripts/prisma-cli.cjs', ...args], {
+    execFileSync(nodeCommand, args, {
         cwd: __dirname,
         stdio: 'inherit',
         env: process.env,
@@ -34,10 +34,10 @@ function prepareDatabase() {
         return;
     }
 
-    runCommand('Applying Prisma migrations', ['migrate', 'deploy']);
+    runCommand('Applying database bootstrap', ['scripts/bootstrap-db.cjs']);
 
     if (process.env.GIOTTO_SEED_ON_BOOT !== '0') {
-        runCommand('Seeding initial data', ['db', 'seed']);
+        runCommand('Seeding initial data', ['scripts/prisma-cli.cjs', 'db', 'seed']);
     }
 }
 
