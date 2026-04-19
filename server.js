@@ -8,11 +8,11 @@ loadEnvConfig(__dirname, process.env.NODE_ENV !== 'production');
 const port = parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || '0.0.0.0';
 const dev = process.env.NODE_ENV !== 'production';
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const nodeCommand = process.execPath;
 
 function runCommand(label, args) {
     console.log(`[startup] ${label}`);
-    execFileSync(npxCommand, args, {
+    execFileSync(nodeCommand, ['scripts/prisma-cli.cjs', ...args], {
         cwd: __dirname,
         stdio: 'inherit',
         env: process.env,
@@ -34,10 +34,10 @@ function prepareDatabase() {
         return;
     }
 
-    runCommand('Applying Prisma migrations', ['prisma', 'migrate', 'deploy']);
+    runCommand('Applying Prisma migrations', ['migrate', 'deploy']);
 
     if (process.env.GIOTTO_SEED_ON_BOOT !== '0') {
-        runCommand('Seeding initial data', ['prisma', 'db', 'seed']);
+        runCommand('Seeding initial data', ['db', 'seed']);
     }
 }
 
