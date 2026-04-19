@@ -39,7 +39,8 @@
     "postcss": "^8",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@esbuild/linux-x64": "0.24.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
