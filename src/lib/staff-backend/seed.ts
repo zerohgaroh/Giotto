@@ -35,27 +35,28 @@ function buildDefaultFloorPlan(tableIds: number[]) {
 }
 
 async function createSeedUsers() {
-  const waiters = await Promise.all(
-    WAITER_SEED_ACCOUNTS.map(async (account) => ({
+  const waiters = [];
+  for (const account of WAITER_SEED_ACCOUNTS) {
+    waiters.push({
       id: account.id,
       role: "waiter" as const,
       name: account.name,
       login: account.login.trim().toLowerCase(),
       passwordHash: await hashPassword(account.password),
       active: account.active,
-    })),
-  );
-  const managers = await Promise.all(
-    MANAGER_SEED_ACCOUNTS.map(async (account) => ({
+    });
+  }
+  const managers = [];
+  for (const account of MANAGER_SEED_ACCOUNTS) {
+    managers.push({
       id: account.id,
       role: "manager" as const,
       name: account.name,
       login: account.login.trim().toLowerCase(),
       passwordHash: await hashPassword(account.password),
       active: account.active,
-    })),
-  );
-
+    });
+  }
   return { waiters, managers };
 }
 
@@ -75,6 +76,7 @@ async function seedDatabase() {
   const tableIds = Array.from({ length: 20 }, (_, index) => index + 1);
   const defaultFloorPlan = buildDefaultFloorPlan(tableIds);
 
+  // Используем последовательные батчи для больших массивов
   await prisma.$transaction(async (tx) => {
     if ((await tx.restaurantProfile.count()) === 0) {
       await tx.restaurantProfile.create({ data: { id: 1, ...DEFAULT_RESTAURANT_PROFILE } });
@@ -91,66 +93,74 @@ async function seedDatabase() {
     }
 
     if ((await tx.menuCategory.count()) === 0) {
-      await tx.menuCategory.createMany({
-        data: MENU_CATEGORIES.map((category, index) => ({
-          id: category.id,
-          labelRu: category.labelRu,
-          icon: category.icon,
-          sortOrder: index,
-        })),
-      });
+      for (const [index, category] of MENU_CATEGORIES.entries()) {
+        await tx.menuCategory.create({
+          data: {
+            id: category.id,
+            labelRu: category.labelRu,
+            icon: category.icon,
+            sortOrder: index,
+          },
+        });
+      }
     }
 
     if ((await tx.dish.count()) === 0) {
-      await tx.dish.createMany({
-        data: DISHES.map((dish, index) => ({
-          id: dish.id,
-          categoryId: dish.category,
-          nameIt: dish.nameIt,
-          nameRu: dish.nameRu,
-          description: dish.description,
-          price: dish.price,
-          image: dish.image,
-          portion: dish.portion,
-          energyKcal: dish.energyKcal,
-          badgeLabel: dish.badgeLabel,
-          badgeTone: dish.badgeTone,
-          highlight: !!dish.highlight,
-          available: dish.available !== false,
-          sortOrder: index,
-        })),
-      });
+      for (const [index, dish] of DISHES.entries()) {
+        await tx.dish.create({
+          data: {
+            id: dish.id,
+            categoryId: dish.category,
+            nameIt: dish.nameIt,
+            nameRu: dish.nameRu,
+            description: dish.description,
+            price: dish.price,
+            image: dish.image,
+            portion: dish.portion,
+            energyKcal: dish.energyKcal,
+            badgeLabel: dish.badgeLabel,
+            badgeTone: dish.badgeTone,
+            highlight: !!dish.highlight,
+            available: dish.available !== false,
+            sortOrder: index,
+          },
+        });
+      }
     }
 
     if ((await tx.staffUser.count()) === 0) {
-      await tx.staffUser.createMany({
-        data: [...waiters, ...managers],
-      });
+      for (const user of [...waiters, ...managers]) {
+        await tx.staffUser.create({ data: user });
+      }
     }
 
     if ((await tx.restaurantTable.count()) === 0) {
-      await tx.restaurantTable.createMany({
-        data: tableIds.map((tableId) => ({
-          id: tableId,
-          label: `Table ${tableId}`,
-          shape: tableId % 3 === 0 ? "round" : tableId % 2 === 0 ? "rect" : "square",
-          sizePreset: "md",
-          floorX: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.x,
-          floorY: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.y,
-        })),
-      });
+      for (const tableId of tableIds) {
+        await tx.restaurantTable.create({
+          data: {
+            id: tableId,
+            label: `Table ${tableId}`,
+            shape: tableId % 3 === 0 ? "round" : tableId % 2 === 0 ? "rect" : "square",
+            sizePreset: "md",
+            floorX: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.x,
+            floorY: defaultFloorPlan.tables.find((table) => table.tableId === tableId)?.y,
+          },
+        });
+      }
     }
 
     if ((await tx.tableAssignment.count()) === 0) {
-      await tx.tableAssignment.createMany({
-        data: WAITER_SEED_ACCOUNTS.flatMap((waiter) =>
-          waiter.tableIds.map((tableId) => ({
-            tableId,
-            waiterId: waiter.id,
-            createdAt: new Date(now),
-          })),
-        ),
-      });
+      for (const waiter of WAITER_SEED_ACCOUNTS) {
+        for (const tableId of waiter.tableIds) {
+          await tx.tableAssignment.create({
+            data: {
+              tableId,
+              waiterId: waiter.id,
+              createdAt: new Date(now),
+            },
+          });
+        }
+      }
     }
 
     if ((await tx.tableSession.count()) === 0) {
@@ -160,154 +170,152 @@ async function seedDatabase() {
         if (tableId === 7) return new Date(now - 27 * 60_000);
         return new Date(now - (14 + tableId * 2) * 60_000);
       };
-
-      await tx.tableSession.createMany({
-        data: Array.from({ length: 12 }, (_, index) => {
-          const tableId = index + 1;
-          return {
+      for (let index = 0; index < 12; index++) {
+        const tableId = index + 1;
+        await tx.tableSession.create({
+          data: {
             id: `seed-session-${tableId}`,
             tableId,
             startedAt: startedAtFor(tableId),
-          };
-        }),
-      });
+          },
+        });
+      }
     }
 
     if ((await tx.serviceRequest.count()) === 0) {
-      await tx.serviceRequest.createMany({
-        data: [
-          {
-            id: "seed-rq-w-3",
-            tableSessionId: "seed-session-3",
-            tableId: 3,
-            type: "waiter",
-            reason: "Question about a dish",
-            createdAt: new Date(now - 3 * 60_000),
-          },
-          {
-            id: "seed-rq-b-5",
-            tableSessionId: "seed-session-5",
-            tableId: 5,
-            type: "bill",
-            reason: "Guests are ready to pay",
-            createdAt: new Date(now - 2 * 60_000),
-          },
-        ],
+      await tx.serviceRequest.create({
+        data: {
+          id: "seed-rq-w-3",
+          tableSessionId: "seed-session-3",
+          tableId: 3,
+          type: "waiter",
+          reason: "Question about a dish",
+          createdAt: new Date(now - 3 * 60_000),
+        },
+      });
+      await tx.serviceRequest.create({
+        data: {
+          id: "seed-rq-b-5",
+          tableSessionId: "seed-session-5",
+          tableId: 5,
+          type: "bill",
+          reason: "Guests are ready to pay",
+          createdAt: new Date(now - 2 * 60_000),
+        },
       });
     }
 
     if ((await tx.waiterTask.count()) === 0) {
-      await tx.waiterTask.createMany({
-        data: [
-          {
-            id: "seed-task-w-3",
-            tableSessionId: "seed-session-3",
-            tableId: 3,
-            waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(3))?.id,
-            type: "waiter_call",
-            priority: "urgent",
-            status: "open",
-            sourceRequestId: "seed-rq-w-3",
-            title: "Guest needs a waiter",
-            subtitle: "Question about a dish",
-            createdAt: new Date(now - 3 * 60_000),
-          },
-          {
-            id: "seed-task-b-5",
-            tableSessionId: "seed-session-5",
-            tableId: 5,
-            waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(5))?.id,
-            type: "bill_request",
-            priority: "urgent",
-            status: "open",
-            sourceRequestId: "seed-rq-b-5",
-            title: "Bring the bill",
-            subtitle: "Guests are ready to pay",
-            createdAt: new Date(now - 2 * 60_000),
-          },
-        ],
+      await tx.waiterTask.create({
+        data: {
+          id: "seed-task-w-3",
+          tableSessionId: "seed-session-3",
+          tableId: 3,
+          waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(3))?.id,
+          type: "waiter_call",
+          priority: "urgent",
+          status: "open",
+          sourceRequestId: "seed-rq-w-3",
+          title: "Guest needs a waiter",
+          subtitle: "Question about a dish",
+          createdAt: new Date(now - 3 * 60_000),
+        },
+      });
+      await tx.waiterTask.create({
+        data: {
+          id: "seed-task-b-5",
+          tableSessionId: "seed-session-5",
+          tableId: 5,
+          waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(5))?.id,
+          type: "bill_request",
+          priority: "urgent",
+          status: "open",
+          sourceRequestId: "seed-rq-b-5",
+          title: "Bring the bill",
+          subtitle: "Guests are ready to pay",
+          createdAt: new Date(now - 2 * 60_000),
+        },
       });
     }
 
     if ((await tx.waiterOrderBatch.count()) === 0) {
-      await tx.waiterOrderBatch.createMany({
-        data: [
-          {
-            id: "seed-batch-3-1",
-            tableSessionId: "seed-session-3",
-            tableId: 3,
-            waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(3))?.id ?? WAITER_SEED_ACCOUNTS[0].id,
-            createdAt: new Date(now - 10 * 60_000),
-          },
-        ],
+      await tx.waiterOrderBatch.create({
+        data: {
+          id: "seed-batch-3-1",
+          tableSessionId: "seed-session-3",
+          tableId: 3,
+          waiterId: WAITER_SEED_ACCOUNTS.find((waiter) => waiter.tableIds.includes(3))?.id ?? WAITER_SEED_ACCOUNTS[0].id,
+          createdAt: new Date(now - 10 * 60_000),
+        },
       });
     }
 
     if ((await tx.billLine.count()) === 0) {
-      await tx.billLine.createMany({
-        data: [
-          {
-            id: "seed-line-3-1",
-            tableSessionId: "seed-session-3",
-            tableId: 3,
-            title: "Tagliatelle al tartufo",
-            dishId: "tagliatelle",
-            qty: 1,
-            price: 198000,
-            source: "guest",
-            note: "Steak doneness: medium rare",
-            createdAt: new Date(now - 24 * 60_000),
-          },
-          {
-            id: "seed-line-3-2",
-            tableSessionId: "seed-session-3",
-            tableId: 3,
-            title: "Acqua Panna",
-            dishId: "panna",
-            qty: 2,
-            price: 28000,
-            source: "waiter",
-            createdAt: new Date(now - 10 * 60_000),
-            waiterOrderBatchId: "seed-batch-3-1",
-          },
-          {
-            id: "seed-line-5-1",
-            tableSessionId: "seed-session-5",
-            tableId: 5,
-            title: "Risotto ai funghi",
-            dishId: "risotto",
-            qty: 2,
-            price: 132000,
-            source: "guest",
-            createdAt: new Date(now - 38 * 60_000),
-          },
-          {
-            id: "seed-line-7-1",
-            tableSessionId: "seed-session-7",
-            tableId: 7,
-            title: "Bruschetta al pomodoro",
-            dishId: "bruschetta",
-            qty: 1,
-            price: 89000,
-            source: "guest",
-            createdAt: new Date(now - 18 * 60_000),
-          },
-        ],
-      });
+      const billLines = [
+        {
+          id: "seed-line-3-1",
+          tableSessionId: "seed-session-3",
+          tableId: 3,
+          title: "Tagliatelle al tartufo",
+          dishId: "tagliatelle",
+          qty: 1,
+          price: 198000,
+          source: "guest",
+          note: "Steak doneness: medium rare",
+          createdAt: new Date(now - 24 * 60_000),
+        },
+        {
+          id: "seed-line-3-2",
+          tableSessionId: "seed-session-3",
+          tableId: 3,
+          title: "Acqua Panna",
+          dishId: "panna",
+          qty: 2,
+          price: 28000,
+          source: "waiter",
+          createdAt: new Date(now - 10 * 60_000),
+          waiterOrderBatchId: "seed-batch-3-1",
+        },
+        {
+          id: "seed-line-5-1",
+          tableSessionId: "seed-session-5",
+          tableId: 5,
+          title: "Risotto ai funghi",
+          dishId: "risotto",
+          qty: 2,
+          price: 132000,
+          source: "guest",
+          createdAt: new Date(now - 38 * 60_000),
+        },
+        {
+          id: "seed-line-7-1",
+          tableSessionId: "seed-session-7",
+          tableId: 7,
+          title: "Bruschetta al pomodoro",
+          dishId: "bruschetta",
+          qty: 1,
+          price: 89000,
+          source: "guest",
+          createdAt: new Date(now - 18 * 60_000),
+        },
+      ];
+      for (const line of billLines) {
+        await tx.billLine.create({ data: line });
+      }
     }
 
     if ((await tx.sessionNote.count()) === 0) {
-      await tx.sessionNote.createMany({
-        data: [
-          {
-            tableSessionId: "seed-session-3",
-            content: "Nut allergy",
-          },
-          {
-            tableSessionId: "seed-session-5",
-            content: "Birthday table",
-          },
-        ],
+      await tx.sessionNote.create({
+        data: {
+          tableSessionId: "seed-session-3",
+          content: "Nut allergy",
+        },
+      });
+      await tx.sessionNote.create({
+        data: {
+          tableSessionId: "seed-session-5",
+          content: "Birthday table",
+        },
       });
     }
   });
