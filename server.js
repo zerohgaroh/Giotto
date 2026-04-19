@@ -30,6 +30,7 @@ function resolveAppModulePath() {
 
 function loadEnvFiles() {
     const mode = process.env.NODE_ENV || "development";
+    const protectedKeys = new Set(Object.keys(process.env));
     const candidates = [
         ".env",
         mode !== "test" ? ".env.local" : null,
@@ -40,7 +41,14 @@ function loadEnvFiles() {
     for (const filename of candidates) {
         const absolutePath = path.join(rootDir, filename);
         if (!fs.existsSync(absolutePath)) continue;
-        dotenv.config({ path: absolutePath, override: true });
+        const parsed = dotenv.parse(fs.readFileSync(absolutePath));
+        for (const [key, value] of Object.entries(parsed)) {
+            if (protectedKeys.has(key)) {
+                continue;
+            }
+
+            process.env[key] = value;
+        }
     }
 }
 
