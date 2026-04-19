@@ -101,7 +101,16 @@ async function main() {
     prepareDatabase();
 
     console.log("[startup] Creating Express application");
-    const { createApp } = await import(resolveAppModulePath());
+    const appModule = await import(resolveAppModulePath());
+    const createApp =
+        appModule.createApp ||
+        (appModule.default && appModule.default.createApp) ||
+        appModule.default;
+
+    if (typeof createApp !== "function") {
+        throw new TypeError("createApp export was not found in server app module");
+    }
+
     const app = await createApp();
     console.log("[startup] Express application created");
 
