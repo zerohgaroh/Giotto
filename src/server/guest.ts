@@ -6,8 +6,8 @@ import {
   isValidGuestAccessKey,
   normalizeGuestAccessKey,
   normalizeTableId,
-} from "@/lib/guest-auth";
-import { tableLabelFromId } from "@/lib/table-label";
+} from "../lib/guest-auth";
+import { tableLabelFromId } from "../lib/table-label";
 
 export const GUEST_ERROR_TEXT: Record<string, string> = {
   "invalid-link": "Ссылка стола недействительна. Откройте страницу через NFC-метку вашего стола.",

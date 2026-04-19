@@ -1,4 +1,4 @@
-import type { StaffSession } from "@/lib/staff-backend/types";
+import type { StaffSession } from "../lib/staff-backend/types";
 
 declare global {
   namespace Express {

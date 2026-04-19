@@ -1,4 +1,4 @@
-import { buildGuestAccessKey } from "@/lib/guest-auth";
+import { buildGuestAccessKey } from "../guest-auth";
 import type { GuestTableLink } from "./types";
 
 function normalizeBaseUrl(value: string | undefined | null) {

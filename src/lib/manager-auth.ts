@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import type { ManagerAuthSession } from "@/lib/waiter-backend/types";
+import type { ManagerAuthSession } from "./waiter-backend/types";
 
 export const MANAGER_COOKIE = "giotto_manager_session";
 const DEFAULT_TTL_SECONDS = 60 * 60 * 12;

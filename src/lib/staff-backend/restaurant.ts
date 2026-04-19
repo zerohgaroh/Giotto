@@ -1,4 +1,4 @@
-import type { RestaurantData } from "@/lib/types";
+import type { RestaurantData } from "../types";
 import { prisma } from "./prisma";
 import { ApiError } from "./projections";
 import { ensureStaffBackendReady } from "./seed";

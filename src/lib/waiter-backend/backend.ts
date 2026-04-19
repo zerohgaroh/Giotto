@@ -1,12 +1,12 @@
-import type { RestaurantData } from "@/lib/types";
-import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
+import type { RestaurantData } from "../types";
+import { MANAGER_SEED_ACCOUNTS } from "../manager-data";
 import {
   getHallData as getLocalHallData,
   getRestaurantData as getLocalRestaurantData,
   resetHallData as resetLocalHallData,
   setHallData as setLocalHallData,
   setRestaurantData as setLocalRestaurantData,
-} from "@/lib/server-state";
+} from "../server-state";
 import { publishRealtimeEvent } from "./realtime";
 import type {
   BillLine,

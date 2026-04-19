@@ -1,4 +1,4 @@
-import type { RestaurantData } from "@/lib/types";
+import type { RestaurantData } from "../types";
 
 export type ServiceTableStatus = "free" | "occupied" | "waiting" | "ordered" | "bill";
 export type ServiceRequestType = "waiter" | "bill";

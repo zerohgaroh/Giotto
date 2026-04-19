@@ -1,6 +1,6 @@
-import { getRestaurantData } from "@/lib/staff-backend/restaurant";
-import { tableLabelFromId } from "@/lib/table-label";
-import type { RestaurantData } from "@/lib/types";
+import { getRestaurantData } from "../lib/staff-backend/restaurant";
+import { tableLabelFromId } from "../lib/table-label";
+import type { RestaurantData } from "../lib/types";
 
 function escapeWifiQrValue(value: string) {
   return value.replace(/([\\;,:"])/g, "\\$1");

@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
-import { getStaffSession } from "@/lib/staff-backend/auth";
-import { ApiError } from "@/lib/staff-backend/projections";
-import type { StaffRole } from "@/lib/staff-backend/types";
+import { getStaffSession } from "../lib/staff-backend/auth";
+import { ApiError } from "../lib/staff-backend/projections";
+import type { StaffRole } from "../lib/staff-backend/types";
 import { asyncHandler } from "./http";
 
 function readBearerToken(raw: string | undefined) {

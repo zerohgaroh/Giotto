@@ -1,4 +1,4 @@
-import type { RealtimeEvent } from "@/lib/waiter-backend/types";
+import type { RealtimeEvent } from "../waiter-backend/types";
 
 export function applyWaiterAssignmentChange(
   waiterId: string | null,

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { ApiError } from "@/lib/staff-backend/projections";
+import { ApiError } from "../lib/staff-backend/projections";
 
 type AsyncHandler<TReq extends Request = Request> = (
   req: TReq,
