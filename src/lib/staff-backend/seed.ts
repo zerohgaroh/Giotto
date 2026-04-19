@@ -10,7 +10,6 @@ const log = (...args: any[]) => console.log("[seed]", ...args);
 declare global {
   // eslint-disable-next-line no-var
   var __giottoSeedPromise: Promise<void> | undefined;
-}
 
 function buildDefaultFloorPlan(tableIds: number[]) {
   const columns = 5;
