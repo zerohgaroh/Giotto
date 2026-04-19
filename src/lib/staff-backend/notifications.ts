@@ -38,6 +38,9 @@ export async function pushWaiterCallNotification(input: {
     .map((device) => ({
       to: device.token,
       sound: "default",
+      priority: "high",
+      channelId: "default",
+      ttl: 300,
       title,
       body: input.reason,
       data: {
