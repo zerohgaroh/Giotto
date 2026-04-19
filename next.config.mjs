@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+    staticGenerationRetryCount: 1,
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 1000,
+  },
   images: {
     remotePatterns: [
       {
