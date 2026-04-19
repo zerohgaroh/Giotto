@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-manrope: "Manrope";
+    --font-cormorant: "Cormorant Garamond";
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --motion-fast: 180ms;
+    --motion-medium: 280ms;
+    --motion-slow: 420ms;
+    --motion-ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    @apply bg-giotto-paper text-giotto-ink;
+  }
+
+  body {
+    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cg stroke='%230a1f4a' stroke-opacity='0.10' stroke-width='1.35'%3E%3Cpath d='M18 46 C32 34 46 58 60 46 C74 34 88 58 102 46'/%3E%3Cpath d='M132 34 C146 22 160 46 174 34 C188 22 202 46 216 34'/%3E%3Cpath d='M246 64 C260 52 274 76 288 64 C302 52 316 76 330 64'/%3E%3Cpath d='M42 118 C56 106 70 130 84 118 C98 106 112 130 126 118'/%3E%3Cpath d='M156 106 C170 94 184 118 198 106 C212 94 226 118 240 106'/%3E%3Cpath d='M268 146 C282 134 296 158 310 146 C324 134 338 158 352 146'/%3E%3Cpath d='M26 188 C40 176 54 200 68 188 C82 176 96 200 110 188'/%3E%3Cpath d='M146 176 C160 164 174 188 188 176 C202 164 216 188 230 176'/%3E%3C/g%3E%3Cg stroke='%23b8924a' stroke-opacity='0.10' stroke-width='1.1'%3E%3Cpath d='M88 74 C102 62 116 86 130 74 C144 62 158 86 172 74'/%3E%3Cpath d='M202 96 C216 84 230 108 244 96 C258 84 272 108 286 96'/%3E%3Cpath d='M78 160 C92 148 106 172 120 160 C134 148 148 172 162 160'/%3E%3Cpath d='M226 200 C240 188 254 212 268 200 C282 188 296 212 310 200'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+      radial-gradient(circle at top, rgba(184, 146, 74, 0.14), transparent 28%),
+      linear-gradient(180deg, #faf8f4 0%, #f3efe6 48%, #f7f3ec 100%);
+    background-size:
+      360px 240px,
+      auto,
+      auto;
+    background-position:
+      14px 12px,
+      center top,
+      center;
+    animation: giotto-lines-float 30s ease-in-out infinite;
+    @apply min-h-dvh min-h-[100dvh] text-giotto-ink antialiased;
+  }
+
+  [x-cloak] {
+    display: none !important;
+  }
+
+  @keyframes giotto-lines-float {
+    0% {
+      background-position:
+        14px 12px,
+        center top,
+        center;
+    }
+    50% {
+      background-position:
+        32px 30px,
+        center top,
+        center;
+    }
+    100% {
+      background-position:
+        14px 12px,
+        center top,
+        center;
+    }
+  }
+
+  @keyframes giotto-page-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes giotto-surface-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.992);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes giotto-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes giotto-sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    body {
+      animation: none;
+    }
+
+    :where(a, button, input, textarea, select) {
+      transition: none !important;
+    }
+
+    .motion-page,
+    .motion-surface,
+    .motion-overlay-enter,
+    .motion-panel-enter {
+      animation: none !important;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-serif {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+  }
+
+  ::selection {
+    background: rgba(184, 146, 74, 0.2);
+    color: #061230;
+  }
+
+  :where(a, button, input, textarea, select) {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      opacity,
+      transform,
+      box-shadow,
+      filter;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-soft);
+  }
+}
+
+@layer components {
+  .motion-page {
+    animation: giotto-page-enter var(--motion-slow) var(--motion-ease-out) both;
+  }
+
+  .motion-surface {
+    animation: giotto-surface-enter var(--motion-medium) var(--motion-ease-out) both;
+  }
+
+  .motion-action {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      opacity,
+      transform,
+      box-shadow,
+      filter;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-soft);
+  }
+
+  .motion-action:hover {
+    transform: translateY(-1px);
+  }
+
+  .motion-action:active {
+    transform: scale(0.985);
+  }
+
+  .motion-action:disabled,
+  .motion-action[aria-disabled="true"] {
+    transform: none;
+  }
+
+  .motion-overlay-enter {
+    animation: giotto-fade-in var(--motion-medium) var(--motion-ease-out) both;
+  }
+
+  .motion-panel-enter {
+    animation: giotto-sheet-up var(--motion-medium) var(--motion-ease-out) both;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}

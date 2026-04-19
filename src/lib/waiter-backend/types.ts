@@ -1,4 +1,4 @@
-import type { RestaurantData } from "@/lib/types";
+import type { RestaurantData } from "../types";
 
 export type ServiceTableStatus = "free" | "occupied" | "waiting" | "ordered" | "bill";
 export type ServiceRequestType = "waiter" | "bill";
@@ -160,12 +160,26 @@ export type RealtimeEventType =
   | "waiter:done"
   | "order:added_by_waiter"
   | "review:submitted"
-  | "table:status_changed";
+  | "table:status_changed"
+  | "table:assignment_changed"
+  | "menu:changed"
+  | "table:created"
+  | "table:archived"
+  | "table:restored"
+  | "floor:layout_changed"
+  | "waiter:created"
+  | "waiter:updated"
+  | "waiter:deactivated"
+  | "waiter:password_reset"
+  | "task:created"
+  | "task:updated"
+  | "task:completed"
+  | "shift:summary_changed";
 
 export type RealtimeEvent = {
   id: string;
   type: RealtimeEventType;
-  tableId: number;
+  tableId?: number;
   ts: number;
   actor?: string;
   payload?: Record<string, unknown>;

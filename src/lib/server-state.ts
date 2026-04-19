@@ -1,10 +1,10 @@
 import { EventEmitter } from "events";
 import { promises as fs } from "fs";
 import path from "path";
-import { DEFAULT_RESTAURANT_PROFILE, DISHES, MENU_CATEGORIES } from "@/lib/menu-data";
-import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
-import { WAITER_SEED_ACCOUNTS } from "@/lib/waiter-data";
-import type { RestaurantData } from "@/lib/types";
+import { DEFAULT_RESTAURANT_PROFILE, DISHES, MENU_CATEGORIES } from "./menu-data";
+import { MANAGER_SEED_ACCOUNTS } from "./manager-data";
+import { WAITER_SEED_ACCOUNTS } from "./waiter-data";
+import type { RestaurantData } from "./types";
 
 type ServiceTableStatus = "free" | "occupied" | "waiting" | "ordered" | "bill";
 type ServiceRequestType = "waiter" | "bill";

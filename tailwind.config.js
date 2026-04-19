@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  content: ["./src/**/*.{js,ts}", "./views/**/*.ejs", "./public/assets/**/*.js"],
   theme: {
     extend: {
       colors: {
@@ -21,6 +21,7 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          "Manrope",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -31,6 +32,7 @@ module.exports = {
           "sans-serif",
         ],
         serif: [
+          "Cormorant Garamond",
           "ui-serif",
           "Georgia",
           "Cambria",

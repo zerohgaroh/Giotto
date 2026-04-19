@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  waiter
+  manager
+}
+
+enum ServiceRequestType {
+  waiter
+  bill
+}
+
+enum BillLineSource {
+  guest
+  waiter
+}
+
+enum PushPlatform {
+  expo
+  ios
+  android
+  web
+}
+
+enum FloorTableShape {
+  square
+  round
+  rect
+}
+
+enum FloorTableSizePreset {
+  sm
+  md
+  lg
+}
+
+enum ActivityActorRole {
+  guest
+  waiter
+  manager
+  system
+}
+
+enum WaiterTaskType {
+  waiter_call
+  bill_request
+  follow_up
+}
+
+enum WaiterTaskPriority {
+  urgent
+  normal
+}
+
+enum WaiterTaskStatus {
+  open
+  acknowledged
+  in_progress
+  completed
+  cancelled
+}
+
+model StaffUser {
+  id                   String               @id
+  role                 StaffRole
+  name                 String
+  login                String               @unique
+  passwordHash         String
+  active               Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  waiterAssignments    TableAssignment[]    @relation("WaiterAssignments")
+  acknowledgedRequests ServiceRequest[]     @relation("AcknowledgedRequests")
+  reviewPrompts        ReviewPrompt[]       @relation("PromptWaiter")
+  guestReviews         GuestReview[]        @relation("ReviewWaiter")
+  waiterTasks          WaiterTask[]         @relation("AssignedWaiterTasks")
+  waiterShortcuts      WaiterShortcutPreference?
+  waiterOrderBatches   WaiterOrderBatch[]   @relation("WaiterOrderBatches")
+  refreshSessions      StaffRefreshSession[]
+  pushDevices          PushDevice[]
+}
+
+model RestaurantTable {
+  id          Int               @id
+  label       String?
+  shape       FloorTableShape   @default(square)
+  sizePreset  FloorTableSizePreset @default(md)
+  floorX      Float?
+  floorY      Float?
+  archivedAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  assignments TableAssignment[]
+  sessions    TableSession[]
+
+  @@index([archivedAt, id])
+}
+
+model TableAssignment {
+  id        String          @id @default(cuid())
+  tableId   Int
+  waiterId  String
+  createdAt DateTime        @default(now())
+  endedAt   DateTime?
+  table     RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  waiter    StaffUser       @relation("WaiterAssignments", fields: [waiterId], references: [id], onDelete: Cascade)
+
+  @@index([tableId, endedAt])
+  @@index([waiterId, endedAt])
+}
+
+model TableSession {
+  id                 String           @id @default(cuid())
+  tableId            Int
+  startedAt          DateTime
+  closedAt           DateTime?
+  waiterCooldownUntil DateTime?
+  billCooldownUntil  DateTime?
+  doneCooldownUntil  DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  table              RestaurantTable  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  requests           ServiceRequest[]
+  billLines          BillLine[]
+  waiterTasks        WaiterTask[]
+  waiterOrderBatches WaiterOrderBatch[]
+  note               SessionNote?
+  reviewPrompts      ReviewPrompt[]
+  guestReviews       GuestReview[]
+
+  @@index([tableId, closedAt, startedAt])
+}
+
+model ServiceRequest {
+  id               String             @id @default(cuid())
+  tableSessionId   String
+  tableId          Int
+  type             ServiceRequestType
+  reason           String
+  createdAt        DateTime           @default(now())
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  resolvedAt       DateTime?
+  tableSession     TableSession       @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  acknowledgedBy   StaffUser?         @relation("AcknowledgedRequests", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  waiterTask       WaiterTask?
+
+  @@index([tableId, resolvedAt, type])
+  @@index([tableSessionId, resolvedAt])
+}
+
+model BillLine {
+  id             String         @id @default(cuid())
+  tableSessionId String
+  tableId        Int
+  dishId         String?
+  title          String
+  qty            Int
+  price          Int
+  source         BillLineSource
+  note           String?
+  createdAt      DateTime       @default(now())
+  tableSession   TableSession   @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  waiterOrderBatchId String?
+  waiterOrderBatch   WaiterOrderBatch? @relation(fields: [waiterOrderBatchId], references: [id], onDelete: SetNull)
+
+  @@index([tableId, createdAt])
+  @@index([tableSessionId, createdAt])
+}
+
+model WaiterTask {
+  id                    String             @id @default(cuid())
+  tableSessionId        String
+  tableId               Int
+  waiterId              String?
+  type                  WaiterTaskType
+  priority              WaiterTaskPriority @default(normal)
+  status                WaiterTaskStatus   @default(open)
+  sourceRequestId       String?            @unique
+  title                 String
+  subtitle              String?
+  note                  String?
+  dueAt                 DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  acknowledgedAt        DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  completionMutationKey String?
+  tableSession          TableSession       @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  waiter                StaffUser?         @relation("AssignedWaiterTasks", fields: [waiterId], references: [id], onDelete: SetNull)
+  sourceRequest         ServiceRequest?    @relation(fields: [sourceRequestId], references: [id], onDelete: SetNull)
+
+  @@index([waiterId, status, priority, createdAt])
+  @@index([tableSessionId, status, createdAt])
+  @@index([tableId, status, createdAt])
+}
+
+model WaiterShortcutPreference {
+  waiterId          String   @id
+  favoriteDishIds   Json
+  noteTemplates     Json
+  quickOrderPresets Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  waiter            StaffUser @relation(fields: [waiterId], references: [id], onDelete: Cascade)
+}
+
+model WaiterOrderBatch {
+  id                 String       @id @default(cuid())
+  tableSessionId     String
+  tableId            Int
+  waiterId           String
+  clientMutationKey  String?      @unique
+  repeatedFromBatchId String?
+  createdAt          DateTime     @default(now())
+  tableSession       TableSession @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  waiter             StaffUser    @relation("WaiterOrderBatches", fields: [waiterId], references: [id], onDelete: Cascade)
+  billLines          BillLine[]
+  repeatedFromBatch  WaiterOrderBatch? @relation("RepeatedWaiterBatches", fields: [repeatedFromBatchId], references: [id], onDelete: SetNull)
+  repeatedBatches    WaiterOrderBatch[] @relation("RepeatedWaiterBatches")
+
+  @@index([tableSessionId, createdAt])
+  @@index([waiterId, createdAt])
+  @@index([tableId, createdAt])
+}
+
+model SessionNote {
+  id             String       @id @default(cuid())
+  tableSessionId String       @unique
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tableSession   TableSession @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+}
+
+model ReviewPrompt {
+  id             String       @id @default(cuid())
+  tableSessionId String
+  tableId        Int
+  waiterId       String?
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime
+  resolvedAt     DateTime?
+  tableSession   TableSession @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  waiter         StaffUser?   @relation("PromptWaiter", fields: [waiterId], references: [id], onDelete: SetNull)
+
+  @@index([tableId, expiresAt, resolvedAt])
+  @@index([tableSessionId, expiresAt])
+}
+
+model GuestReview {
+  id             String       @id @default(cuid())
+  tableSessionId String
+  tableId        Int
+  waiterId       String?
+  rating         Int
+  comment        String?
+  createdAt      DateTime     @default(now())
+  tableSession   TableSession @relation(fields: [tableSessionId], references: [id], onDelete: Cascade)
+  waiter         StaffUser?   @relation("ReviewWaiter", fields: [waiterId], references: [id], onDelete: SetNull)
+
+  @@index([tableId, createdAt])
+}
+
+model ServiceActivityEvent {
+  id             String            @id @default(cuid())
+  type           String
+  actorRole      ActivityActorRole
+  actorId        String?
+  tableId        Int?
+  tableSessionId String?
+  payload        Json?
+  createdAt      DateTime          @default(now())
+
+  @@index([createdAt])
+  @@index([tableId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([type, createdAt])
+}
+
+model PushDevice {
+  id          String       @id @default(cuid())
+  staffUserId String
+  token       String       @unique
+  platform    PushPlatform
+  deviceId    String?
+  appVersion  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  staffUser   StaffUser    @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@index([staffUserId, updatedAt])
+}
+
+model StaffRefreshSession {
+  id          String    @id @default(cuid())
+  staffUserId String
+  tokenHash   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  staffUser   StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@index([staffUserId, revokedAt])
+  @@index([expiresAt])
+}
+
+model RestaurantProfile {
+  id           Int      @id @default(1)
+  name         String
+  subtitle     String
+  description  String
+  logo         String
+  banner       String
+  wifiName     String
+  wifiPassword String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RestaurantSettings {
+  id                  Int      @id @default(1)
+  managerSoundEnabled Boolean  @default(true)
+  floorPlan           Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model MenuCategory {
+  id        String   @id
+  labelRu   String
+  icon      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dishes    Dish[]
+}
+
+model Dish {
+  id         String   @id
+  categoryId String
+  nameIt     String
+  nameRu     String
+  description String
+  price      Int
+  image      String
+  portion    String
+  energyKcal Int
+  badgeLabel String?
+  badgeTone  String?
+  highlight  Boolean  @default(false)
+  available  Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId, sortOrder])
+}

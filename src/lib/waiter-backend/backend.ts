@@ -1,12 +1,12 @@
-import type { RestaurantData } from "@/lib/types";
-import { MANAGER_SEED_ACCOUNTS } from "@/lib/manager-data";
+import type { RestaurantData } from "../types";
+import { MANAGER_SEED_ACCOUNTS } from "../manager-data";
 import {
   getHallData as getLocalHallData,
   getRestaurantData as getLocalRestaurantData,
   resetHallData as resetLocalHallData,
   setHallData as setLocalHallData,
   setRestaurantData as setLocalRestaurantData,
-} from "@/lib/server-state";
+} from "../server-state";
 import { publishRealtimeEvent } from "./realtime";
 import type {
   BillLine,
@@ -482,9 +482,9 @@ export async function acknowledgeWaiterRequest(params: {
     hall.tables = hall.tables.map((item) =>
       item.tableId === tableId
         ? {
-            ...item,
-            status: "occupied",
-          }
+          ...item,
+          status: "occupied",
+        }
         : item,
     );
 
@@ -562,10 +562,10 @@ export async function addWaiterOrder(params: {
     hall.tables = hall.tables.map((item) =>
       item.tableId === tableId
         ? {
-            ...item,
-            status: "ordered",
-            guestStartedAt: item.status === "free" ? now : item.guestStartedAt,
-          }
+          ...item,
+          status: "ordered",
+          guestStartedAt: item.status === "free" ? now : item.guestStartedAt,
+        }
         : item,
     );
 
@@ -617,9 +617,9 @@ export async function markWaiterDone(params: {
     hall.tables = hall.tables.map((item) =>
       item.tableId === tableId
         ? {
-            ...item,
-            doneCooldownUntil: Math.max(toMillis(item.doneCooldownUntil), now + 30_000),
-          }
+          ...item,
+          doneCooldownUntil: Math.max(toMillis(item.doneCooldownUntil), now + 30_000),
+        }
         : item,
     );
 
@@ -732,10 +732,10 @@ export async function createGuestRequest(params: {
     hall.tables = hall.tables.map((item) =>
       item.tableId === tableId
         ? {
-            ...item,
-            status: nextStatus,
-            guestStartedAt: item.status === "free" ? now : item.guestStartedAt,
-          }
+          ...item,
+          status: nextStatus,
+          guestStartedAt: item.status === "free" ? now : item.guestStartedAt,
+        }
         : item,
     );
 

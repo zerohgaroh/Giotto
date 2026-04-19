@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <%- include("../partials/head", { pageTitle }) %>
+  </head>
+  <body>
+    <script id="hub-data" type="application/json"><%- serialize({
+      wifiName: profile.wifiName,
+      wifiPassword: profile.wifiPassword,
+      wifiQrUrl,
+    }) %></script>
+
+    <div x-data="guestHub('hub-data')">
+      <main
+        class="motion-page mx-auto flex min-h-dvh max-w-guest flex-col px-5 pb-10"
+        style="padding-top:max(1.5rem,var(--safe-top));padding-bottom:max(2rem,var(--safe-bottom));"
+      >
+        <header class="pt-1 text-center">
+          <p class="font-sans text-[15px] font-semibold tracking-[0.02em] text-giotto-navy-deep">Стол <%= tableLabel %></p>
+        </header>
+
+        <section class="motion-surface relative mt-8 overflow-hidden rounded-[2.25rem] border border-[#d8d1c3] bg-[#fcfaf6] px-6 pb-8 pt-8 shadow-[0_12px_30px_rgba(8,29,54,0.07)]">
+          <svg aria-hidden="true" viewBox="0 0 420 620" preserveAspectRatio="none" class="pointer-events-none absolute inset-0 h-full w-full opacity-60">
+            <path d="M-40 160 C 70 80, 170 245, 300 165 C 355 130, 410 145, 460 165" fill="none" stroke="rgba(10,31,74,0.13)" stroke-width="2"></path>
+            <path d="M-30 430 C 80 360, 185 520, 305 450 C 350 425, 395 430, 455 448" fill="none" stroke="rgba(10,31,74,0.12)" stroke-width="2"></path>
+            <path d="M-25 530 C 95 468, 185 620, 320 565 C 372 544, 420 550, 465 560" fill="none" stroke="rgba(184,146,74,0.16)" stroke-width="1.8"></path>
+          </svg>
+          <div class="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.16),transparent_72%)]"></div>
+
+          <div class="relative flex flex-col items-center text-center">
+            <div class="rounded-full bg-white p-2.5 shadow-[0_18px_38px_rgba(8,29,54,0.09)]">
+              <img src="<%= profile.logo %>" alt="<%= profile.name %>" class="h-[118px] w-[118px] rounded-full object-contain ring-2 ring-giotto-gold/20 ring-offset-0" />
+            </div>
+            <h1 class="mt-6 font-serif text-[3rem] font-semibold uppercase leading-none tracking-[0.04em] text-giotto-navy-deep">
+              <%= profile.name %>
+            </h1>
+            <p class="mt-2 max-w-xs text-[12px] uppercase tracking-[0.24em] text-giotto-muted"><%= profile.subtitle %></p>
+            <p class="mt-5 max-w-xs text-[14px] leading-relaxed text-giotto-muted/95"><%= profile.description %></p>
+          </div>
+        </section>
+
+        <nav class="mt-6 flex w-full flex-col gap-3" aria-label="Сервис за столом">
+          <a href="<%= menuPath %>" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
+            <span aria-hidden="true">≡</span>
+            Меню
+          </a>
+          <a href="<%= waiterPath %>?intent=bill" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
+            <span aria-hidden="true">▤</span>
+            Принести счёт
+          </a>
+          <a href="<%= waiterPath %>" class="motion-action flex min-h-[3.7rem] w-full items-center justify-center gap-2 rounded-full border-2 border-giotto-navy bg-giotto-navy px-4 text-center font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition active:scale-[0.99] hover:border-giotto-navy-deep hover:bg-giotto-navy-deep">
+            <span aria-hidden="true">◉</span>
+            Позвать официанта
+          </a>
+        </nav>
+
+        <div class="mx-auto mt-7 flex w-full max-w-xs flex-col items-center gap-3">
+          <button
+            type="button"
+            class="motion-action inline-flex items-center gap-2 font-sans text-[14px] font-medium text-giotto-navy-soft underline decoration-giotto-gold/60 underline-offset-4 transition hover:text-giotto-navy"
+            @click="wifiOpen = true"
+          >
+            Wi‑Fi зала
+          </button>
+          <p class="max-w-xs text-center font-sans text-[11px] leading-relaxed text-giotto-muted">
+            Этот экран привязан к вашему столу: номер подставляется из NFC-карточки на столе.
+          </p>
+        </div>
+      </main>
+
+      <div x-cloak x-show="wifiOpen" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center" style="display:none">
+        <button type="button" class="motion-overlay-enter absolute inset-0 bg-giotto-navy-deep/55" aria-label="Закрыть" @click="wifiOpen = false"></button>
+        <div class="motion-panel-enter relative m-0 w-full max-w-guest rounded-t-giotto-xl border border-giotto-line bg-white p-6 shadow-card sm:m-4 sm:rounded-giotto-lg">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="font-sans text-[11px] font-semibold uppercase tracking-widest text-giotto-gold">Wi‑Fi</p>
+              <h2 class="mt-1 font-serif text-xl font-semibold text-giotto-navy-deep">Сеть гостя</h2>
+            </div>
+            <button type="button" class="motion-action flex h-10 w-10 items-center justify-center rounded-full border border-giotto-line text-giotto-navy transition hover:bg-giotto-paper" aria-label="Закрыть" @click="wifiOpen = false">×</button>
+          </div>
+          <p class="mt-4 font-mono text-lg font-semibold text-giotto-navy-deep" x-text="wifiName"></p>
+          <p class="mt-1 font-sans text-sm text-giotto-muted">
+            Пароль: <span class="font-medium text-giotto-ink" x-text="wifiPassword"></span>
+          </p>
+          <div class="mt-4 flex w-full flex-col items-center rounded-[1.2rem] border border-[#d8cfbf] bg-[linear-gradient(180deg,#fdfbf7_0%,#f6f1e7_100%)] px-4 py-4">
+            <span class="rounded-full border border-giotto-navy/20 bg-white px-3 py-1 font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-giotto-navy">
+              Giotto Wi‑Fi
+            </span>
+            <div class="mt-3 rounded-[1rem] border-2 border-giotto-navy bg-white p-2 shadow-[0_10px_22px_rgba(8,29,54,0.12)]">
+              <img :src="wifiQrUrl" :alt="`QR-код Wi‑Fi сети ${wifiName}`" class="h-60 w-60 rounded-[0.7rem] bg-[#fcfaf6] object-cover" />
+            </div>
+            <p class="mt-3 text-center text-[13px] leading-relaxed text-giotto-muted">
+              Отсканируйте QR-код камерой телефона для быстрого подключения к сети.
+            </p>
+          </div>
+          <div class="mt-5 flex flex-col gap-3">
+            <button type="button" class="motion-action w-full rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[14px] font-medium text-white transition hover:bg-giotto-navy-deep" @click="copyWifiPassword()">
+              <span x-show="wifiCopied !== 'password'">Скопировать пароль</span>
+              <span x-show="wifiCopied === 'password'" style="display:none">Пароль скопирован</span>
+            </button>
+          </div>
+          <button type="button" class="motion-action mt-4 w-full rounded-giotto-lg border border-giotto-line bg-white py-3.5 font-sans text-[15px] font-medium text-giotto-navy-deep transition hover:border-giotto-navy hover:bg-giotto-paper" @click="wifiOpen = false">
+            Закрыть
+          </button>
+        </div>
+      </div>
+
+      <%- include("../partials/review-prompt", { tableId }) %>
+    </div>
+  </body>
+</html>

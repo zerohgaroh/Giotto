@@ -1,0 +1,56 @@
+<section
+  id="complaint-root"
+  class="flex flex-1 flex-col px-5 pt-8"
+>
+  <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-giotto-line bg-white shadow-lift text-giotto-navy">
+    <svg aria-hidden="true" viewBox="0 0 24 24" class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H11l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-7Z" />
+    </svg>
+  </div>
+
+  <div class="motion-surface mt-6 overflow-hidden rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-lift backdrop-blur-sm">
+    <p class="text-center text-[15px] leading-relaxed text-giotto-muted">
+      Опишите ситуацию. Сообщение уйдёт администратору зала.
+    </p>
+
+    <% if (complaintError) { %>
+      <p class="mt-4 rounded-giotto border border-[#f2d7bf] bg-[#fff5ea] px-3 py-2 text-sm text-[#9a4f1e]">
+        <%= complaintError %>
+      </p>
+    <% } %>
+
+    <form
+      class="mt-6"
+      method="post"
+      action="<%= complaintPath %>"
+      hx-post="<%= complaintPath %>"
+      hx-target="#complaint-root"
+      hx-swap="outerHTML"
+    >
+      <label class="block">
+        <span class="text-sm font-semibold text-giotto-navy-deep">Что случилось</span>
+        <textarea
+          name="text"
+          rows="6"
+          placeholder="Например: долгое ожидание, ошибка в блюде, проблема с сервисом..."
+          class="mt-2 w-full resize-none rounded-giotto-lg border border-giotto-line bg-white px-3 py-3 text-[15px] outline-none transition focus:border-giotto-navy"
+        ><%= complaintText || "" %></textarea>
+      </label>
+
+      <div class="mt-10 flex flex-col gap-3">
+        <button
+          type="submit"
+          class="motion-action h-[52px] w-full rounded-giotto-lg bg-giotto-navy font-medium text-white transition hover:bg-giotto-navy-deep"
+        >
+          Отправить
+        </button>
+        <a
+          href="<%= tablePath %>"
+          class="motion-action py-3 text-center text-sm font-medium text-giotto-muted underline decoration-giotto-line underline-offset-4 hover:text-giotto-navy"
+        >
+          Отмена
+        </a>
+      </div>
+    </form>
+  </div>
+</section>

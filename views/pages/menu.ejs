@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <%- include("../partials/head", { pageTitle }) %>
+  </head>
+  <body>
+    <script id="menu-page-data" type="application/json"><%- serialize(menuModel) %></script>
+
+    <div x-data="menuPage('menu-page-data')">
+      <main class="motion-page flex min-h-dvh flex-col pb-[calc(5.5rem+var(--safe-bottom))]">
+        <header class="sticky top-0 z-30 border-b border-giotto-line/90 bg-giotto-cream/90 shadow-[0_1px_0_rgba(8,29,54,0.04)] backdrop-blur-md" style="padding-top:max(0.5rem,var(--safe-top));">
+          <div class="mx-auto flex max-w-guest items-center gap-2 px-3 py-2">
+            <a href="<%= tablePath %>" class="motion-action flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-giotto-line bg-white text-giotto-navy transition hover:bg-giotto-paper" aria-label="К столу">←</a>
+            <div class="min-w-0 flex-1 text-center">
+              <p class="font-sans text-[10px] font-semibold uppercase tracking-widest text-giotto-muted">Стол <%= tableLabel %></p>
+              <h1 class="truncate font-serif text-lg font-semibold text-giotto-navy-deep"><%= restaurant.profile.name %> · Меню</h1>
+            </div>
+            <div class="h-11 w-11 shrink-0" aria-hidden="true"></div>
+          </div>
+          <div class="flex gap-2 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <template x-for="category in allCategories" :key="category.id">
+              <button
+                type="button"
+                class="motion-action shrink-0 rounded-full border px-4 py-2 font-sans text-[13px] font-medium transition active:scale-[0.98]"
+                :class="category.id === cat ? 'border-giotto-navy bg-giotto-navy text-white shadow-lift' : 'border-giotto-line bg-white/90 text-giotto-muted hover:border-giotto-navy-soft hover:text-giotto-navy'"
+                @click="setCategory(category.id)"
+                x-text="category.labelRu"
+              ></button>
+            </template>
+          </div>
+        </header>
+
+        <main class="mx-auto w-full max-w-guest flex-1 px-3 pt-4">
+          <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+            <template x-for="dish in filteredDishes" :key="dish.id">
+              <article class="motion-surface group flex flex-col overflow-hidden rounded-[1.35rem] border border-[#ece5d8] bg-white shadow-[0_8px_22px_rgba(8,29,54,0.08)] transition hover:-translate-y-0.5 hover:border-giotto-gold/45 hover:shadow-card">
+                <button type="button" class="text-left" @click="openDish(dish.id)">
+                  <div class="relative aspect-[1.12] w-full overflow-hidden bg-giotto-line">
+                    <img :src="dish.image" :alt="dish.nameRu" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                  </div>
+                  <div class="flex min-h-[5.7rem] flex-col px-3 pb-2.5 pt-2.5">
+                    <h2 class="line-clamp-2 min-h-[2.65rem] font-sans text-[1.06rem] font-semibold leading-[1.24] tracking-[-0.01em] text-giotto-ink" x-text="dish.nameRu"></h2>
+                    <div class="mt-auto">
+                      <p class="text-[10px] uppercase tracking-[0.11em] text-giotto-muted">Цена</p>
+                      <p class="mt-0.5 font-sans text-[0.9rem] font-semibold text-giotto-navy" x-text="formatPrice(dish.price)"></p>
+                    </div>
+                  </div>
+                </button>
+                <div class="mt-auto px-3 pb-3">
+                  <template x-if="qtyFor(dish.id) === 0">
+                    <button type="button" class="motion-action flex min-h-[2.8rem] w-full items-center justify-center gap-1.5 rounded-[0.9rem] bg-giotto-navy text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)] transition hover:bg-giotto-navy-deep active:scale-95" @click="addDish(dish.id)">
+                      <span>+</span>
+                      <span class="text-[12px] font-semibold uppercase tracking-[0.08em]">Добавить</span>
+                    </button>
+                  </template>
+                  <template x-if="qtyFor(dish.id) > 0">
+                    <div class="flex min-h-[2.8rem] w-full items-center justify-between rounded-[0.9rem] bg-giotto-navy px-1.5 py-1 text-white shadow-[0_10px_18px_rgba(8,29,54,0.18)]">
+                      <button type="button" class="motion-action flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15" @click="setDishQty(dish.id, qtyFor(dish.id) - 1)" aria-label="Меньше">−</button>
+                      <span class="min-w-[1.5rem] text-center text-[0.98rem] font-semibold" x-text="qtyFor(dish.id)"></span>
+                      <button type="button" class="motion-action flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/15" @click="addDish(dish.id)" aria-label="Больше">+</button>
+                    </div>
+                  </template>
+                </div>
+              </article>
+            </template>
+          </div>
+
+          <div x-show="filteredDishes.length === 0" class="motion-surface rounded-giotto-lg border border-giotto-line bg-white px-4 py-8 text-center text-sm text-giotto-muted" style="display:none">
+            В этой категории пока нет доступных блюд.
+          </div>
+        </main>
+
+        <div x-cloak x-show="sheet" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center" style="display:none">
+          <button type="button" class="motion-overlay-enter absolute inset-0 bg-giotto-navy-deep/55" aria-label="Закрыть" @click="closeDish()"></button>
+          <div class="motion-panel-enter relative m-0 w-full max-w-guest rounded-t-giotto-xl border border-giotto-line bg-white p-5 shadow-card sm:m-4 sm:rounded-giotto-lg">
+            <template x-if="sheet">
+              <div>
+                <div class="relative aspect-[1.2] w-full overflow-hidden rounded-[1.2rem] bg-giotto-line">
+                  <img :src="sheet.image" :alt="sheet.nameRu" class="h-full w-full object-cover" />
+                </div>
+                <div class="mt-4">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-giotto-muted" x-text="sheet.category"></p>
+                  <h2 class="mt-1 font-serif text-3xl font-semibold text-giotto-navy-deep" x-text="sheet.nameRu"></h2>
+                  <p class="mt-3 text-sm leading-relaxed text-giotto-muted" x-text="sheet.description"></p>
+                  <div class="mt-4 flex items-center justify-between rounded-giotto-lg border border-giotto-line bg-giotto-cream/70 px-4 py-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.16em] text-giotto-muted">Порция</p>
+                      <p class="mt-1 font-semibold text-giotto-navy-deep" x-text="sheet.portion"></p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-[11px] uppercase tracking-[0.16em] text-giotto-muted">Цена</p>
+                      <p class="mt-1 font-semibold text-giotto-navy-deep" x-text="formatPrice(sheet.price)"></p>
+                    </div>
+                  </div>
+                  <div class="mt-5 grid grid-cols-2 gap-3">
+                    <button type="button" class="motion-action min-h-[2.8rem] rounded-xl border border-giotto-line bg-white text-sm font-semibold text-giotto-navy" @click="closeDish()">Закрыть</button>
+                    <button type="button" class="motion-action min-h-[2.8rem] rounded-xl bg-giotto-navy text-sm font-semibold text-white" @click="sheet && addDish(sheet.id)">Добавить</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <nav class="motion-surface fixed inset-x-0 bottom-0 z-40 border-t border-giotto-line bg-white px-4 py-2 shadow-[0_-8px_30px_rgba(8,29,54,0.06)]" style="padding-bottom:max(0.5rem,var(--safe-bottom));" aria-label="Быстрые действия">
+          <div class="mx-auto flex max-w-guest gap-3">
+            <a href="<%= cartPath %>" class="motion-action relative flex flex-1 items-center justify-center gap-2 rounded-giotto-lg border-2 border-giotto-navy bg-white py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-giotto-navy transition hover:bg-giotto-navy hover:text-white">
+              Корзина
+              <span x-show="totalQty > 0" class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-giotto-gold px-1 text-[10px] font-bold text-giotto-navy-deep" style="display:none" x-text="totalQty > 99 ? '99+' : totalQty"></span>
+            </a>
+            <a href="<%= waiterPath %>" class="motion-action flex flex-1 items-center justify-center gap-2 rounded-giotto-lg bg-giotto-navy py-3.5 font-sans text-[13px] font-bold uppercase tracking-wide text-white shadow-lift transition hover:bg-giotto-navy-deep">
+              Вызов
+            </a>
+          </div>
+        </nav>
+      </main>
+
+      <%- include("../partials/review-prompt", { tableId }) %>
+    </div>
+  </body>
+</html>
