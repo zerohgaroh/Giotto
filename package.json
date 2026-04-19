@@ -49,6 +49,6 @@
     "eslint-config-next": "14.2.35"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node scripts/run-seed.cjs"
   }
 }
