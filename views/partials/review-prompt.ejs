@@ -1,7 +1,7 @@
 <script id="review-prompt-data" type="application/json"><%- serialize({
   tableId,
   reviewUrl: `/api/table/${encodeURIComponent(tableId)}/review`,
-  sseUrl: "/api/realtime/stream",
+  sseUrl: `/api/table/${encodeURIComponent(tableId)}/realtime`,
 }) %></script>
 
 <div x-data="reviewPrompt('review-prompt-data')" x-cloak>

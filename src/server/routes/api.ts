@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import multer from "multer";
+import { GUEST_TABLE_COOKIE, hasGuestAccessToTable, normalizeTableId as normalizeGuestTableId } from "../../lib/guest-auth";
+import { loadRealtimeBacklog } from "../../lib/staff-backend/activity";
 import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "../../lib/staff-backend/auth";
 import { getStaffBootstrap } from "../../lib/staff-backend/bootstrap";
 import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "../../lib/staff-backend/guest";
@@ -10,10 +12,11 @@ import { ApiError } from "../../lib/staff-backend/projections";
 import { parseOptionalInt, parseTableId } from "../../lib/staff-backend/route-parsers";
 import { getRestaurantData } from "../../lib/staff-backend/restaurant";
 import { applyWaiterAssignmentChange, canWaiterReceiveRealtimeEvent } from "../../lib/staff-backend/realtime-access";
-import { getWaiterQueue, getWaiterShiftSummary, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, registerPushDevice } from "../../lib/staff-backend/waiter";
+import { getWaiterQueue, getWaiterShiftSummary, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, finishWaiterTable, registerPushDevice } from "../../lib/staff-backend/waiter";
 import { getHallProjection } from "../../lib/staff-backend/projections";
 import { resetStaffSeedData } from "../../lib/staff-backend/seed";
 import { subscribeRealtimeEvents } from "../../lib/waiter-backend/realtime";
+import type { RealtimeEvent } from "../../lib/waiter-backend/types";
 import { requireStaffAuth } from "../auth";
 import { asyncHandler, getAbsoluteUrl, getRequestOrigin, jsonNoStore, sendApiError, toFetchRequest } from "../http";
 
@@ -73,8 +76,8 @@ function createSseStream(res: Response) {
   });
   res.flushHeaders?.();
   return {
-    push(event: string, data: unknown) {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    push(event: string, data: unknown, id?: string) {
+      res.write(`${id ? `id: ${id}\n` : ""}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     },
     ping() {
       res.write(`: ping ${Date.now()}\n\n`);
@@ -83,6 +86,32 @@ function createSseStream(res: Response) {
       res.end();
     },
   };
+}
+
+function pushRealtimeEvent(stream: ReturnType<typeof createSseStream>, event: RealtimeEvent) {
+  stream.push(event.type, event, event.id);
+}
+
+function readGuestTableId(req: Request) {
+  const raw = paramString(req.params.tableId) || queryString(req.query.tableId) || "";
+  return normalizeGuestTableId(raw);
+}
+
+function canGuestReceiveTableRealtime(req: Request, tableId: string) {
+  return hasGuestAccessToTable(req.cookies?.[GUEST_TABLE_COOKIE], tableId);
+}
+
+function pushStaffRealtimeEvent(input: {
+  stream: ReturnType<typeof createSseStream>;
+  event: RealtimeEvent;
+  waiterId: string | null;
+  allowedTableIds: Set<number> | null;
+}) {
+  const visible = canWaiterReceiveRealtimeEvent(input.waiterId, input.allowedTableIds, input.event);
+  if (visible) {
+    pushRealtimeEvent(input.stream, input.event);
+  }
+  applyWaiterAssignmentChange(input.waiterId, input.allowedTableIds, input.event);
 }
 
 export function createApiRouter() {
@@ -130,21 +159,79 @@ export function createApiRouter() {
     }),
   );
 
-  api.get("/realtime/stream", (req, res) => {
-    const stream = createSseStream(res);
-    stream.push("ready", { at: Date.now() });
+  api.get(
+    "/realtime/stream",
+    asyncHandler(async (req, res) => {
+      const guestTableId = readGuestTableId(req);
+      if (!guestTableId || !canGuestReceiveTableRealtime(req, guestTableId)) {
+        jsonNoStore(res, { error: "Table-scoped realtime stream is required" }, 400);
+        return;
+      }
 
-    const unsubscribe = subscribeRealtimeEvents((event) => {
-      stream.push(event.type, event);
-    });
-    const heartbeat = setInterval(() => stream.ping(), 15_000);
+      const tableId = parseTableId(guestTableId);
+      const cursor = queryString(req.query.cursor);
+      const stream = createSseStream(res);
+      stream.push("ready", { at: Date.now(), cursor: cursor ?? null });
 
-    req.on("close", () => {
-      clearInterval(heartbeat);
-      unsubscribe();
-      stream.close();
-    });
-  });
+      const backlog = await loadRealtimeBacklog({
+        tableId,
+        cursor,
+        sinceMs: cursor ? undefined : Date.now() - 120_000,
+      });
+      for (const event of backlog) {
+        pushRealtimeEvent(stream, event);
+      }
+
+      const unsubscribe = subscribeRealtimeEvents((event) => {
+        if (event.tableId !== tableId) return;
+        pushRealtimeEvent(stream, event);
+      });
+      const heartbeat = setInterval(() => stream.ping(), 15_000);
+
+      req.on("close", () => {
+        clearInterval(heartbeat);
+        unsubscribe();
+        stream.close();
+      });
+    }),
+  );
+
+  api.get(
+    "/table/:tableId/realtime",
+    asyncHandler(async (req, res) => {
+      const guestTableId = readGuestTableId(req);
+      if (!guestTableId || !canGuestReceiveTableRealtime(req, guestTableId)) {
+        jsonNoStore(res, { error: "Guest table access is required" }, 401);
+        return;
+      }
+
+      const tableId = parseTableId(guestTableId);
+      const cursor = queryString(req.query.cursor);
+      const stream = createSseStream(res);
+      stream.push("ready", { at: Date.now(), cursor: cursor ?? null });
+
+      const backlog = await loadRealtimeBacklog({
+        tableId,
+        cursor,
+        sinceMs: cursor ? undefined : Date.now() - 120_000,
+      });
+      for (const event of backlog) {
+        pushRealtimeEvent(stream, event);
+      }
+
+      const unsubscribe = subscribeRealtimeEvents((event) => {
+        if (event.tableId !== tableId) return;
+        pushRealtimeEvent(stream, event);
+      });
+      const heartbeat = setInterval(() => stream.ping(), 15_000);
+
+      req.on("close", () => {
+        clearInterval(heartbeat);
+        unsubscribe();
+        stream.close();
+      });
+    }),
+  );
 
   api.get(
     "/table/:tableId/request",
@@ -264,49 +351,64 @@ export function createApiRouter() {
     }),
   );
 
-  api.get("/staff/realtime/stream", async (req, res) => {
-    let waiterId: string | null = null;
-    let allowedTableIds: Set<number> | null = null;
+  api.get(
+    "/staff/realtime/stream",
+    asyncHandler(async (req, res) => {
+      let waiterId: string | null = null;
+      let allowedTableIds: Set<number> | null = null;
+      const cursor = queryString(req.query.cursor);
 
-    try {
-      const accessToken = queryString(req.query.accessToken);
-      const token = req.get("authorization") || (accessToken ? `Bearer ${accessToken}` : undefined);
-      const session = await getStaffSession(token ? token.replace(/^Bearer\s+/i, "") : undefined);
-      if (!session) {
-        throw new Error("Staff authentication is required");
-      }
-
-      if (session.role === "waiter") {
-        waiterId = session.userId;
-        const waiter = await getWaiterById(session.userId);
-        if (!waiter) {
-          throw new Error("Unauthorized");
+      try {
+        const accessToken = queryString(req.query.accessToken);
+        const token = req.get("authorization") || (accessToken ? `Bearer ${accessToken}` : undefined);
+        const session = await getStaffSession(token ? token.replace(/^Bearer\s+/i, "") : undefined);
+        if (!session) {
+          throw new Error("Staff authentication is required");
         }
-        allowedTableIds = new Set(waiter.tableIds);
-      }
-    } catch (error) {
-      jsonNoStore(res, { error: unauthorizedMessage(error) }, 401);
-      return;
-    }
 
-    const stream = createSseStream(res);
-    stream.push("ready", { at: Date.now() });
-
-    const unsubscribe = subscribeRealtimeEvents((event) => {
-      applyWaiterAssignmentChange(waiterId, allowedTableIds, event);
-      if (!canWaiterReceiveRealtimeEvent(waiterId, allowedTableIds, event)) {
+        if (session.role === "waiter") {
+          waiterId = session.userId;
+          const waiter = await getWaiterById(session.userId);
+          if (!waiter) {
+            throw new Error("Unauthorized");
+          }
+          allowedTableIds = new Set(waiter.tableIds);
+        }
+      } catch (error) {
+        jsonNoStore(res, { error: unauthorizedMessage(error) }, 401);
         return;
       }
-      stream.push(event.type, event);
-    });
-    const heartbeat = setInterval(() => stream.ping(), 15_000);
 
-    req.on("close", () => {
-      clearInterval(heartbeat);
-      unsubscribe();
-      stream.close();
-    });
-  });
+      const stream = createSseStream(res);
+      stream.push("ready", { at: Date.now(), cursor: cursor ?? null });
+
+      const backlog = await loadRealtimeBacklog({ cursor });
+      for (const event of backlog) {
+        pushStaffRealtimeEvent({
+          stream,
+          event,
+          waiterId,
+          allowedTableIds,
+        });
+      }
+
+      const unsubscribe = subscribeRealtimeEvents((event) => {
+        pushStaffRealtimeEvent({
+          stream,
+          event,
+          waiterId,
+          allowedTableIds,
+        });
+      });
+      const heartbeat = setInterval(() => stream.ping(), 15_000);
+
+      req.on("close", () => {
+        clearInterval(heartbeat);
+        unsubscribe();
+        stream.close();
+      });
+    }),
+  );
 
   api.post(
     "/staff/devices/push-token",
@@ -433,6 +535,22 @@ export function createApiRouter() {
         await markWaiterDone({
           waiterId: req.staffSession!.userId,
           tableId: parseTableId(paramString(req.params.tableId)),
+        }),
+      );
+    }),
+  );
+
+  api.post(
+    "/staff/waiter/tables/:tableId/finish",
+    requireStaffAuth({ role: "waiter" }),
+    asyncHandler(async (req, res) => {
+      const body = bodyObject(req);
+      jsonNoStore(
+        res,
+        await finishWaiterTable({
+          waiterId: req.staffSession!.userId,
+          tableId: parseTableId(paramString(req.params.tableId)),
+          mutationKey: typeof body.mutationKey === "string" ? body.mutationKey : undefined,
         }),
       );
     }),

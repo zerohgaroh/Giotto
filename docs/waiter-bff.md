@@ -68,6 +68,11 @@ Body:
 - Creates review prompt (TTL 60s).
 - Emits realtime: `waiter:done`.
 
+### `POST /api/staff/waiter/tables/:tableId/finish`
+- Requires staff waiter auth and table assignment.
+- Closes the active table session, completes active waiter tasks, resolves active service requests, and creates a review prompt (TTL 60s).
+- Emits realtime: `waiter:done`, `task:completed`, `table:status_changed`.
+
 ### `POST /api/waiter/tables/:tableId/orders`
 Body:
 ```json
@@ -79,6 +84,11 @@ Body:
 ```
 - Adds waiter bill lines.
 - Emits realtime: `order:added_by_waiter`, `table:status_changed`.
+
+### `POST /api/table/:tableId/orders`
+- Adds guest bill lines from cart.
+- Creates a waiter task `guest_order`.
+- Emits realtime: `order:submitted_by_guest`, `task:created`, `table:status_changed`.
 
 ### `PATCH /api/waiter/tables/:tableId/note`
 Body:
@@ -115,13 +125,26 @@ Body:
 - Emits realtime: `review:submitted`.
 
 ## Realtime
+### `GET /api/staff/realtime/stream?accessToken=<token>&cursor=<cursor>`
+- Staff SSE stream with heartbeat, event `id`, and optional DB catch-up from `ServiceActivityEvent`.
+- `cursor` is base64url JSON `{ "ts": number, "id": string }`.
+- Waiter streams are filtered by assigned tables and waiter-scoped payloads.
+
+### `GET /api/table/:tableId/realtime?cursor=<cursor>`
+- Guest table-scoped SSE stream protected by the guest table cookie.
+- Emits only events for the requested table.
+- Without `cursor`, sends recent table events for 2 minutes so review prompts survive reload.
+
 ### `GET /api/realtime/stream`
-- SSE stream with heartbeat.
+- Deprecated compatibility endpoint.
+- Requires table scope and guest table access; global public realtime is not exposed.
+
 - Event types:
   - `waiter:called`
   - `bill:requested`
   - `waiter:acknowledged`
   - `waiter:done`
+  - `order:submitted_by_guest`
   - `order:added_by_waiter`
   - `review:submitted`
   - `table:status_changed`

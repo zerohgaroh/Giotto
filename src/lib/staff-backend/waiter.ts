@@ -907,6 +907,139 @@ export async function markWaiterDone(input: {
   return loadWaiterTableWithTimeline(input.waiterId, input.tableId);
 }
 
+export async function finishWaiterTable(input: {
+  waiterId: string;
+  tableId: number;
+  mutationKey?: string;
+}): Promise<WaiterTableDetail> {
+  const table = await getAssignedTableRecord(input.tableId, input.waiterId);
+  const activeSession = getActiveSession(table);
+
+  if (!activeSession) {
+    throw new ApiError(409, "Active table session was not found");
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 60_000);
+  let reviewPromptId = "";
+  let completedTaskIds: string[] = [];
+
+  await prisma.$transaction(async (tx) => {
+    const tasks = await tx.waiterTask.findMany({
+      where: {
+        tableSessionId: activeSession.id,
+        waiterId: input.waiterId,
+        status: { in: [...ACTIVE_TASK_STATUSES] },
+      },
+      select: { id: true, acknowledgedAt: true, startedAt: true },
+    });
+    completedTaskIds = tasks.map((task) => task.id);
+
+    if (completedTaskIds.length > 0) {
+      await Promise.all(
+        tasks.map((task) =>
+          tx.waiterTask.update({
+            where: { id: task.id },
+            data: {
+              status: "completed",
+              acknowledgedAt: task.acknowledgedAt ?? now,
+              startedAt: task.startedAt ?? task.acknowledgedAt ?? now,
+              completedAt: now,
+              completionMutationKey: input.mutationKey,
+            },
+          }),
+        ),
+      );
+    }
+
+    await tx.serviceRequest.updateMany({
+      where: {
+        tableSessionId: activeSession.id,
+        resolvedAt: null,
+      },
+      data: {
+        acknowledgedAt: now,
+        acknowledgedById: input.waiterId,
+        resolvedAt: now,
+      },
+    });
+
+    await tx.reviewPrompt.updateMany({
+      where: {
+        tableSessionId: activeSession.id,
+        resolvedAt: null,
+      },
+      data: { resolvedAt: now },
+    });
+
+    const prompt = await tx.reviewPrompt.create({
+      data: {
+        tableSessionId: activeSession.id,
+        tableId: input.tableId,
+        waiterId: input.waiterId,
+        createdAt: now,
+        expiresAt,
+      },
+    });
+    reviewPromptId = prompt.id;
+
+    await tx.tableSession.update({
+      where: { id: activeSession.id },
+      data: {
+        closedAt: now,
+        doneCooldownUntil: now,
+      },
+    });
+  });
+
+  const events = await appendActivityEvents([
+    {
+      type: "waiter:done",
+      actorRole: "waiter",
+      actorId: input.waiterId,
+      tableId: input.tableId,
+      tableSessionId: activeSession.id,
+      payload: {
+        expiresAt: expiresAt.getTime(),
+        reviewPromptId,
+        action: "finish_table",
+      },
+    },
+    ...completedTaskIds.map((taskId) => ({
+      type: "task:completed" as const,
+      actorRole: "waiter" as const,
+      actorId: input.waiterId,
+      tableId: input.tableId,
+      tableSessionId: activeSession.id,
+      payload: {
+        taskId,
+        status: "completed",
+        waiterId: input.waiterId,
+        action: "finish_table",
+      },
+    })),
+    {
+      type: "table:status_changed",
+      actorRole: "system",
+      actorId: "system",
+      tableId: input.tableId,
+      tableSessionId: activeSession.id,
+      payload: { to: "free", action: "finish_table" },
+    },
+    {
+      type: "shift:summary_changed",
+      actorRole: "system",
+      actorId: input.waiterId,
+      tableId: input.tableId,
+      tableSessionId: activeSession.id,
+      payload: { waiterId: input.waiterId },
+    },
+  ]);
+  publishActivityEvents(events);
+
+  return loadWaiterTableWithTimeline(input.waiterId, input.tableId);
+}
+
 export async function getWaiterShiftSummary(input: {
   waiterId: string;
   sessionId: string;

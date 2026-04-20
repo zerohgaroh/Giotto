@@ -8,7 +8,7 @@ export type PushPlatform = "expo" | "ios" | "android" | "web";
 export type FloorTableShape = "square" | "round" | "rect";
 export type FloorTableSizePreset = "sm" | "md" | "lg";
 export type ActivityActorRole = "guest" | "waiter" | "manager" | "system";
-export type WaiterTaskType = "waiter_call" | "bill_request" | "follow_up";
+export type WaiterTaskType = "waiter_call" | "bill_request" | "guest_order" | "follow_up";
 export type WaiterTaskPriority = "urgent" | "normal";
 export type WaiterTaskStatus = "open" | "acknowledged" | "in_progress" | "completed" | "cancelled";
 

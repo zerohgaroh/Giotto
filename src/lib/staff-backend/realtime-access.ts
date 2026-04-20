@@ -1,5 +1,13 @@
 import type { RealtimeEvent } from "../waiter-backend/types";
 
+function readAssignmentWaiterIds(event: RealtimeEvent) {
+  return {
+    previousWaiterId:
+      typeof event.payload?.previousWaiterId === "string" ? event.payload.previousWaiterId : undefined,
+    nextWaiterId: typeof event.payload?.nextWaiterId === "string" ? event.payload.nextWaiterId : undefined,
+  };
+}
+
 export function applyWaiterAssignmentChange(
   waiterId: string | null,
   allowedTableIds: Set<number> | null,
@@ -9,9 +17,7 @@ export function applyWaiterAssignmentChange(
     return allowedTableIds;
   }
 
-  const previousWaiterId =
-    typeof event.payload?.previousWaiterId === "string" ? event.payload.previousWaiterId : undefined;
-  const nextWaiterId = typeof event.payload?.nextWaiterId === "string" ? event.payload.nextWaiterId : undefined;
+  const { previousWaiterId, nextWaiterId } = readAssignmentWaiterIds(event);
 
   if (previousWaiterId === waiterId && typeof event.tableId === "number") {
     allowedTableIds.delete(event.tableId);
@@ -30,6 +36,11 @@ export function canWaiterReceiveRealtimeEvent(
   event: RealtimeEvent,
 ) {
   if (!allowedTableIds) return true;
+  if (event.type === "table:assignment_changed" && typeof event.tableId === "number") {
+    const { previousWaiterId, nextWaiterId } = readAssignmentWaiterIds(event);
+    return previousWaiterId === waiterId || nextWaiterId === waiterId || allowedTableIds.has(event.tableId);
+  }
+
   if (typeof event.tableId === "number") {
     return allowedTableIds.has(event.tableId);
   }

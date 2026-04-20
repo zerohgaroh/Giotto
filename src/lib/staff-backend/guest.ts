@@ -211,6 +211,7 @@ export async function submitGuestOrder(input: {
   const now = new Date();
   let tableSessionId = "";
   let waiterId: string | undefined;
+  let taskId = "";
 
   await prisma.$transaction(async (tx) => {
     const table = await tx.restaurantTable.findUnique({
@@ -248,6 +249,25 @@ export async function submitGuestOrder(input: {
         createdAt: now,
       })),
     });
+
+    if (waiterId) {
+      const itemCount = validItems.reduce((sum, item) => sum + item.qty, 0);
+      const totalAmount = validItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+      const createdTask = await tx.waiterTask.create({
+        data: {
+          tableSessionId: session.id,
+          tableId: input.tableId,
+          waiterId,
+          type: "guest_order",
+          priority: "urgent",
+          status: "open",
+          title: "New order from guest cart",
+          subtitle: `${itemCount} item${itemCount === 1 ? "" : "s"} · ${totalAmount}`,
+          createdAt: now,
+        },
+      });
+      taskId = createdTask.id;
+    }
   });
 
   const itemCount = validItems.reduce((sum, item) => sum + item.qty, 0);
@@ -273,6 +293,33 @@ export async function submitGuestOrder(input: {
       tableSessionId,
       payload: { to: "ordered", action: "guest_order_submitted" },
     },
+    ...(taskId
+      ? [
+          {
+            type: "task:created" as const,
+            actorRole: "system" as const,
+            actorId: waiterId,
+            tableId: input.tableId,
+            tableSessionId,
+            payload: {
+              taskId,
+              waiterId,
+              status: "open",
+              taskType: "guest_order",
+              itemCount,
+              totalAmount,
+            },
+          },
+          {
+            type: "shift:summary_changed" as const,
+            actorRole: "system" as const,
+            actorId: waiterId,
+            tableId: input.tableId,
+            tableSessionId,
+            payload: { waiterId },
+          },
+        ]
+      : []),
   ]);
   publishActivityEvents(events);
 

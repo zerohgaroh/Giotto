@@ -52,6 +52,7 @@ enum ActivityActorRole {
 enum WaiterTaskType {
   waiter_call
   bill_request
+  guest_order
   follow_up
 }
 

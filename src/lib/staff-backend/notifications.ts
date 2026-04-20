@@ -71,7 +71,7 @@ export async function pushWaiterServiceAlert(input: {
       to: device.token,
       sound: "default",
       priority: "high",
-      channelId: "default",
+      channelId: "giotto-service-alerts",
       ttl: 300,
       title: copy.title,
       body: copy.body,

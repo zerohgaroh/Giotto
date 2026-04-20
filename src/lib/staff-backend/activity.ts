@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { publishRealtimeEvent } from "../waiter-backend/realtime";
 import type { ActivityActorRole, ManagerHistoryEntry, RealtimeEventType } from "./types";
+import type { RealtimeEvent } from "../waiter-backend/types";
 
 export type ActivityEventInput = {
   type: string;
@@ -57,7 +58,7 @@ export function publishActivityEvents(events: StoredActivityEvent[]) {
       id: event.id,
       ts: event.ts,
       type: event.type as RealtimeEventType,
-      tableId: event.tableId ?? 0,
+      tableId: event.tableId,
       actor: event.actorId ?? event.actorRole,
       payload: event.payload,
     });
@@ -85,4 +86,63 @@ export function parseHistoryCursor(cursor: string | null | undefined): { ts: num
   } catch {
     return null;
   }
+}
+
+export type RealtimeBacklogOptions = {
+  cursor?: string | null;
+  tableId?: number;
+  sinceMs?: number;
+  limit?: number;
+};
+
+function toRealtimeEvent(event: {
+  id: string;
+  type: string;
+  tableId: number | null;
+  actorId: string | null;
+  actorRole: ActivityActorRole;
+  payload: Prisma.JsonValue | null;
+  createdAt: Date;
+}): RealtimeEvent {
+  return {
+    id: event.id,
+    type: event.type as RealtimeEventType,
+    tableId: event.tableId ?? undefined,
+    ts: event.createdAt.getTime(),
+    actor: event.actorId ?? event.actorRole,
+    payload:
+      event.payload && typeof event.payload === "object" && !Array.isArray(event.payload)
+        ? (event.payload as Record<string, unknown>)
+        : undefined,
+  };
+}
+
+export async function loadRealtimeBacklog(options: RealtimeBacklogOptions = {}): Promise<RealtimeEvent[]> {
+  const cursor = parseHistoryCursor(options.cursor);
+  const limit = Math.min(Math.max(options.limit ?? 200, 1), 200);
+  const createdAtFloor = options.sinceMs ? new Date(options.sinceMs) : undefined;
+  const cursorDate = cursor ? new Date(cursor.ts) : undefined;
+
+  const events = await prisma.serviceActivityEvent.findMany({
+    where: {
+      ...(typeof options.tableId === "number" ? { tableId: options.tableId } : {}),
+      ...(cursor && cursorDate
+        ? {
+            OR: [
+              { createdAt: { gt: cursorDate } },
+              {
+                createdAt: cursorDate,
+                id: { gt: cursor.id },
+              },
+            ],
+          }
+        : createdAtFloor
+          ? { createdAt: { gte: createdAtFloor } }
+          : {}),
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: limit,
+  });
+
+  return events.map(toRealtimeEvent);
 }
