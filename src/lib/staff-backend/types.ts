@@ -255,6 +255,7 @@ export type RealtimeEventType =
   | "bill:requested"
   | "waiter:acknowledged"
   | "waiter:done"
+  | "order:submitted_by_guest"
   | "order:added_by_waiter"
   | "review:submitted"
   | "table:status_changed"

@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { pushWaiterCallNotification } from "./notifications";
+import { pushWaiterCallNotification, pushWaiterServiceAlert } from "./notifications";
 import { ApiError, ensureActiveSession, getAssignedWaiterId, toCooldownState } from "./projections";
 import { ensureStaffBackendReady } from "./seed";
 import { appendActivityEvents, publishActivityEvents } from "./activity";
@@ -210,12 +210,28 @@ export async function submitGuestOrder(input: {
 
   const now = new Date();
   let tableSessionId = "";
+  let waiterId: string | undefined;
 
   await prisma.$transaction(async (tx) => {
-    const table = await tx.restaurantTable.findUnique({ where: { id: input.tableId } });
+    const table = await tx.restaurantTable.findUnique({
+      where: { id: input.tableId },
+      include: {
+        assignments: {
+          where: { endedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { waiter: true },
+        },
+      },
+    });
     if (!table || table.archivedAt) {
       throw new ApiError(404, "Table not found");
     }
+
+    waiterId = getAssignedWaiterId({
+      ...table,
+      sessions: [],
+    });
 
     const session = await ensureActiveSession(input.tableId, tx, now);
     tableSessionId = session.id;
@@ -234,7 +250,21 @@ export async function submitGuestOrder(input: {
     });
   });
 
+  const itemCount = validItems.reduce((sum, item) => sum + item.qty, 0);
+  const totalAmount = validItems.reduce((sum, item) => sum + item.qty * item.price, 0);
   const events = await appendActivityEvents([
+    {
+      type: "order:submitted_by_guest",
+      actorRole: "guest",
+      actorId: "guest",
+      tableId: input.tableId,
+      tableSessionId,
+      payload: {
+        lines: validItems.length,
+        itemCount,
+        totalAmount,
+      },
+    },
     {
       type: "table:status_changed",
       actorRole: "system",
@@ -245,6 +275,14 @@ export async function submitGuestOrder(input: {
     },
   ]);
   publishActivityEvents(events);
+
+  await pushWaiterServiceAlert({
+    waiterId,
+    tableId: input.tableId,
+    type: "order",
+    itemCount,
+    totalAmount,
+  });
 
   return { ok: true };
 }

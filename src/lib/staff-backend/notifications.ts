@@ -1,6 +1,8 @@
 import { prisma } from "./prisma";
 import type { ServiceRequestType } from "./types";
 
+export type WaiterServiceAlertType = ServiceRequestType | "order";
+
 async function sendExpoPushMessages(messages: Array<Record<string, unknown>>) {
   if (messages.length === 0) return;
 
@@ -18,11 +20,41 @@ async function sendExpoPushMessages(messages: Array<Record<string, unknown>>) {
   }
 }
 
-export async function pushWaiterCallNotification(input: {
+function getServiceAlertCopy(input: {
+  tableId: number;
+  type: WaiterServiceAlertType;
+  reason?: string;
+  itemCount?: number;
+  totalAmount?: number;
+}) {
+  if (input.type === "bill") {
+    return {
+      title: `Table ${input.tableId} - Bill requested`,
+      body: input.reason || "Guests are ready to pay",
+    };
+  }
+
+  if (input.type === "order") {
+    const itemText = input.itemCount ? `${input.itemCount} item${input.itemCount === 1 ? "" : "s"}` : "New order";
+    return {
+      title: `Table ${input.tableId} - New order`,
+      body: input.reason || `${itemText} from guest cart.`,
+    };
+  }
+
+  return {
+    title: `Table ${input.tableId} - Waiter requested`,
+    body: input.reason || "Guests requested a waiter",
+  };
+}
+
+export async function pushWaiterServiceAlert(input: {
   waiterId?: string;
   tableId: number;
-  type: ServiceRequestType;
-  reason: string;
+  type: WaiterServiceAlertType;
+  reason?: string;
+  itemCount?: number;
+  totalAmount?: number;
 }) {
   if (!input.waiterId) return;
 
@@ -31,7 +63,7 @@ export async function pushWaiterCallNotification(input: {
     orderBy: { updatedAt: "desc" },
   });
 
-  const title = input.type === "bill" ? `Table ${input.tableId} - Bill requested` : `Table ${input.tableId} - Waiter requested`;
+  const copy = getServiceAlertCopy(input);
 
   const messages = devices
     .filter((device) => device.token.startsWith("ExponentPushToken") || device.token.startsWith("ExpoPushToken"))
@@ -41,14 +73,18 @@ export async function pushWaiterCallNotification(input: {
       priority: "high",
       channelId: "default",
       ttl: 300,
-      title,
-      body: input.reason,
+      title: copy.title,
+      body: copy.body,
       data: {
         tableId: input.tableId,
         screen: "WaiterTable",
         requestType: input.type,
+        itemCount: input.itemCount,
+        totalAmount: input.totalAmount,
       },
     }));
 
   await sendExpoPushMessages(messages);
 }
+
+export const pushWaiterCallNotification = pushWaiterServiceAlert;
