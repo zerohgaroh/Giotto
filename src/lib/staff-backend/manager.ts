@@ -20,7 +20,7 @@ import {
   toServiceRequest,
   type TableRecord,
 } from "./projections";
-import { getRestaurantData } from "./restaurant";
+import { getRestaurantData, updateRestaurantProfile, type RestaurantProfileInput } from "./restaurant";
 import type {
   CreateWaiterInput,
   DishInput,
@@ -907,6 +907,31 @@ export async function getManagerMenuSnapshot(managerId: string): Promise<Manager
     categories: restaurant.categories,
     dishes: restaurant.dishes,
   };
+}
+
+export async function getManagerRestaurantSettings(managerId: string) {
+  await ensureManager(managerId);
+  return getRestaurantData();
+}
+
+export async function updateManagerRestaurantSettings(input: {
+  managerId: string;
+  payload: RestaurantProfileInput;
+}) {
+  await ensureManager(input.managerId);
+  const restaurant = await updateRestaurantProfile(input.payload);
+
+  const events = await appendActivityEvents([
+    {
+      type: "restaurant:updated",
+      actorRole: "manager",
+      actorId: input.managerId,
+      payload: { action: "restaurant_profile_updated" },
+    },
+  ]);
+  publishActivityEvents(events);
+
+  return restaurant;
 }
 
 export async function createManagerMenuCategory(input: {

@@ -161,6 +161,7 @@ export type RealtimeEventType =
   | "order:submitted_by_guest"
   | "order:added_by_waiter"
   | "review:submitted"
+  | "restaurant:updated"
   | "table:status_changed"
   | "table:assignment_changed"
   | "menu:changed"

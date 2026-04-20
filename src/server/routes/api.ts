@@ -6,7 +6,7 @@ import { loadRealtimeBacklog } from "../../lib/staff-backend/activity";
 import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "../../lib/staff-backend/auth";
 import { getStaffBootstrap } from "../../lib/staff-backend/bootstrap";
 import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "../../lib/staff-backend/guest";
-import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable } from "../../lib/staff-backend/manager";
+import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable, getManagerRestaurantSettings, updateManagerRestaurantSettings } from "../../lib/staff-backend/manager";
 import { readManagerMenuImage, saveManagerMenuImage } from "../../lib/staff-backend/menu-images";
 import { ApiError } from "../../lib/staff-backend/projections";
 import { parseOptionalInt, parseTableId } from "../../lib/staff-backend/route-parsers";
@@ -677,6 +677,36 @@ export function createApiRouter() {
       );
     }),
   );
+
+  api
+    .route("/staff/manager/restaurant")
+    .get(
+      requireStaffAuth({ role: "manager" }),
+      asyncHandler(async (req, res) => {
+        jsonNoStore(res, await getManagerRestaurantSettings(req.staffSession!.userId));
+      }),
+    )
+    .patch(
+      requireStaffAuth({ role: "manager" }),
+      asyncHandler(async (req, res) => {
+        const body = bodyObject(req);
+        jsonNoStore(
+          res,
+          await updateManagerRestaurantSettings({
+            managerId: req.staffSession!.userId,
+            payload: {
+              name: asString(body.name),
+              subtitle: asString(body.subtitle),
+              description: asString(body.description),
+              logo: asString(body.logo),
+              banner: asString(body.banner),
+              wifiName: asString(body.wifiName),
+              wifiPassword: asString(body.wifiPassword),
+            },
+          }),
+        );
+      }),
+    );
 
   api
     .route("/staff/manager/layout")

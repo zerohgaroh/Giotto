@@ -3,6 +3,16 @@ import { prisma } from "./prisma";
 import { ApiError } from "./projections";
 import { ensureStaffBackendReady } from "./seed";
 
+export type RestaurantProfileInput = {
+  name?: string;
+  subtitle?: string;
+  description?: string;
+  logo?: string;
+  banner?: string;
+  wifiName?: string;
+  wifiPassword?: string;
+};
+
 export async function getRestaurantData(): Promise<RestaurantData> {
   await ensureStaffBackendReady();
 
@@ -47,4 +57,50 @@ export async function getRestaurantData(): Promise<RestaurantData> {
       available: dish.available,
     })),
   };
+}
+
+export async function updateRestaurantProfile(input: RestaurantProfileInput): Promise<RestaurantData> {
+  await ensureStaffBackendReady();
+
+  const normalize = (value: string | undefined) => (typeof value === "string" ? value.trim() : undefined);
+  const data = {
+    name: normalize(input.name),
+    subtitle: normalize(input.subtitle),
+    description: normalize(input.description),
+    logo: normalize(input.logo),
+    banner: normalize(input.banner),
+    wifiName: normalize(input.wifiName),
+    wifiPassword: normalize(input.wifiPassword),
+  };
+
+  const next = {
+    name: data.name,
+    subtitle: data.subtitle,
+    description: data.description,
+    logo: data.logo,
+    banner: data.banner,
+    wifiName: data.wifiName,
+    wifiPassword: data.wifiPassword,
+  };
+
+  if (!next.name || !next.subtitle || !next.description || !next.logo || !next.banner) {
+    throw new ApiError(400, "Restaurant profile fields are incomplete");
+  }
+
+  await prisma.restaurantProfile.upsert({
+    where: { id: 1 },
+    update: next,
+    create: {
+      id: 1,
+      name: next.name,
+      subtitle: next.subtitle,
+      description: next.description,
+      logo: next.logo,
+      banner: next.banner,
+      wifiName: next.wifiName ?? "",
+      wifiPassword: next.wifiPassword ?? "",
+    },
+  });
+
+  return getRestaurantData();
 }

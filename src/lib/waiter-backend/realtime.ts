@@ -11,6 +11,9 @@ const realtimeEmitter = globalThis.__giottoRealtimeEmitter ?? new EventEmitter()
 if (!globalThis.__giottoRealtimeEmitter) {
   globalThis.__giottoRealtimeEmitter = realtimeEmitter;
 }
+// SSE keeps one listener per connected client. More than 10 concurrent staff/guest
+// streams is expected, so the default Node warning is too low for this use case.
+realtimeEmitter.setMaxListeners(0);
 
 export function publishRealtimeEvent(
   event: Omit<RealtimeEvent, "id" | "ts"> & Partial<Pick<RealtimeEvent, "id" | "ts">>,
