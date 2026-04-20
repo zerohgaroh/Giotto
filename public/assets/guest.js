@@ -677,6 +677,13 @@
           return;
         }
 
+        const previousExpiresAt = this.expiresAt;
+        const previousLocalCooldownUntil = this.localCooldownUntil;
+        const currentNow = Date.now();
+        this.localCooldownUntil = currentNow + WAIT_SEC * 1000;
+        this.nowMs = currentNow;
+        this.timerError = "";
+
         try {
           const response = await fetch(this.requestUrl, {
             method: "POST",
@@ -694,12 +701,15 @@
           }
 
           const payload = await response.json();
-          const currentNow = Date.now();
+          const syncedNow = Date.now();
           this.expiresAt = Number(payload && payload.cooldown && payload.cooldown.availableAt) || 0;
-          this.localCooldownUntil = currentNow + WAIT_SEC * 1000;
-          this.nowMs = currentNow;
+          this.localCooldownUntil = syncedNow + WAIT_SEC * 1000;
+          this.nowMs = syncedNow;
           this.timerError = "";
         } catch (error) {
+          this.expiresAt = previousExpiresAt;
+          this.localCooldownUntil = previousLocalCooldownUntil;
+          this.nowMs = Date.now();
           this.timerError = error instanceof Error ? error.message : "Не удалось отправить вызов";
         }
       },
