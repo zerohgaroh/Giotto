@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --font-manrope: "Manrope";
-    --font-cormorant: "Cormorant Garamond";
+    --font-manrope: "Inter";
+    --font-cormorant: "Inter";
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-top: env(safe-area-inset-top, 0px);
     --motion-fast: 180ms;
@@ -132,7 +132,7 @@
   h5,
   h6,
   .font-serif {
-    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+    font-family: var(--font-cormorant), ui-sans-serif, system-ui, sans-serif;
   }
 
   ::selection {

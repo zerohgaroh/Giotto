@@ -442,13 +442,6 @@
         return optimizeMenuImageUrl((dish && dish.image) || this.profile.banner || this.profile.logo || "", 720);
       },
 
-      categoryPreview(categoryId) {
-        return this.dishesForCategory(categoryId)
-          .slice(0, 3)
-          .map((dish) => dish.nameRu)
-          .join(" · ");
-      },
-
       openCategory(categoryId) {
         this.selectedCategoryId = categoryId;
         this.sheet = null;

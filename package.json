@@ -17,7 +17,7 @@
     "db:seed:menu": "node scripts/seed-menu-from-array.cjs",
     "db:prepare": "npm run db:deploy && npm run db:seed",
     "db:reset": "node scripts/prisma-cli.cjs db push --force-reset && node scripts/run-seed.cjs --reset",
-    "build:server": "tsc -p tsconfig.json",
+    "build:server": "node scripts/prisma-cli.cjs generate && tsc -p tsconfig.json",
     "build:css": "tailwindcss -i ./src/styles/main.css -o ./public/assets/app.css --minify",
     "build": "npm run build:server && npm run build:css",
     "start": "npm run build && npm run start:server",

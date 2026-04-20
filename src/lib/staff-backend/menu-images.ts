@@ -2,9 +2,10 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import { imageSize } from "image-size";
 import path from "path";
-import sharp from "sharp";
 import { ApiError } from "./projections";
 import type { MenuImageUploadResponse } from "./types";
+
+const sharp = require("sharp");
 
 const MAX_MENU_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_MENU_IMAGE_WIDTH = 1600;

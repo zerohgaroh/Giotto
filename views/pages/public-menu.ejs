@@ -17,7 +17,7 @@
           <div class="absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
 
           <div class="relative mx-auto flex min-h-[28rem] max-w-6xl flex-col justify-between px-4 py-5 sm:min-h-[32rem] sm:px-6 lg:px-8" style="padding-top:max(1.25rem,var(--safe-top));">
-            <header class="flex items-center justify-between gap-4">
+            <header class="flex items-center gap-4">
               <a href="/" class="motion-action flex items-center gap-3 rounded-full border border-white/18 bg-white/10 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-md" aria-label="<%= restaurant.profile.name %>">
                 <span class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-white">
                   <img src="<%= restaurant.profile.logo %>" alt="" class="h-full w-full object-cover" />
@@ -27,9 +27,6 @@
                   <span class="mt-1 block text-[11px] uppercase tracking-[0.18em] text-white/66">Public menu</span>
                 </span>
               </a>
-              <a href="/guest" class="motion-action rounded-full border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md hover:bg-white hover:text-giotto-navy">
-                Я за столом
-              </a>
             </header>
 
             <div class="max-w-3xl pb-8 pt-20 sm:pb-10 sm:pt-24">
@@ -38,7 +35,7 @@
                 <%= restaurant.profile.name %>
               </h1>
               <p class="mt-5 max-w-2xl text-base leading-7 text-white/78 sm:text-lg">
-                <%= restaurant.profile.description || restaurant.profile.subtitle %>
+                Итальянская кухня, тёплая атмосфера и блюда, к которым хочется возвращаться снова.
               </p>
             </div>
           </div>
@@ -46,36 +43,27 @@
 
         <section class="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
           <div x-show="!selectedCategoryId" x-transition.opacity>
-            <div class="mb-5 flex flex-col gap-2 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+            <div class="mb-5 sm:mb-7">
               <div>
                 <p class="font-sans text-[11px] font-bold uppercase tracking-[0.22em] text-giotto-gold">Выберите раздел</p>
                 <h2 class="mt-2 font-serif text-4xl font-semibold tracking-[-0.025em] text-giotto-navy-deep sm:text-5xl">Категории</h2>
               </div>
-              <p class="max-w-md text-sm leading-6 text-giotto-muted">
-                Откройте категорию, чтобы посмотреть блюда, состав, порцию и цену. Заказ и вызов официанта доступны только после входа за столом.
-              </p>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            <div class="grid gap-3 [grid-auto-rows:1fr] sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               <template x-for="category in categories" :key="category.id">
                 <button
                   type="button"
-                  class="motion-surface group overflow-hidden rounded-[1.65rem] border border-[#ece5d8] bg-white text-left shadow-[0_16px_45px_rgba(8,29,54,0.08)] transition hover:-translate-y-1 hover:border-giotto-gold/60 hover:shadow-card"
+                  class="motion-surface group flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-[#ece5d8] bg-white text-left shadow-[0_16px_45px_rgba(8,29,54,0.08)] transition hover:-translate-y-1 hover:border-giotto-gold/60 hover:shadow-card"
                   @click="openCategory(category.id)"
                 >
                   <div class="relative aspect-[1.18] overflow-hidden bg-giotto-line">
                     <img :src="categoryCover(category.id)" :alt="category.labelRu" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
                     <div class="absolute inset-0 bg-gradient-to-t from-giotto-navy-deep/70 via-transparent to-transparent"></div>
-                    <div class="absolute bottom-3 left-3 rounded-full bg-white/92 px-3 py-1 text-xs font-bold text-giotto-navy shadow-lift" x-text="`${dishCount(category.id)} блюд`"></div>
+                    <div class="absolute bottom-3 left-3 rounded-full border border-white/15 bg-giotto-navy-deep/68 px-3 py-1 text-xs font-bold text-white shadow-lift backdrop-blur-sm" x-text="`${dishCount(category.id)} блюд`"></div>
                   </div>
-                  <div class="p-4 sm:p-5">
-                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-giotto-gold" x-text="category.icon || 'Giotto'"></p>
-                    <h3 class="mt-2 font-serif text-3xl font-semibold leading-none text-giotto-navy-deep" x-text="category.labelRu"></h3>
-                    <p class="mt-3 min-h-[2.5rem] text-sm leading-5 text-giotto-muted" x-text="categoryPreview(category.id) || 'Скоро добавим блюда в этот раздел.'"></p>
-                    <span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-giotto-navy">
-                      Открыть меню
-                      <span class="transition group-hover:translate-x-1">→</span>
-                    </span>
+                  <div class="flex min-h-[6.75rem] items-end p-4 sm:p-5">
+                    <h3 class="font-serif text-3xl font-semibold leading-none text-giotto-navy-deep" x-text="category.labelRu"></h3>
                   </div>
                 </button>
               </template>
