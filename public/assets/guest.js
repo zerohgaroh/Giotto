@@ -602,6 +602,7 @@
       requestUrl: config.requestUrl || "",
       nowMs: Date.now(),
       expiresAt: 0,
+      localCooldownUntil: 0,
       timerError: "",
       tickInterval: null,
 
@@ -621,7 +622,9 @@
       },
 
       get remaining() {
-        return Math.max(0, Math.ceil((this.expiresAt - this.nowMs) / 1000));
+        const serverRemaining = Math.max(0, Math.ceil((this.expiresAt - this.nowMs) / 1000));
+        const localRemaining = Math.max(0, Math.ceil((this.localCooldownUntil - this.nowMs) / 1000));
+        return Math.min(WAIT_SEC, Math.max(serverRemaining, localRemaining));
       },
 
       get requested() {
@@ -657,8 +660,12 @@
           }
 
           const payload = await response.json();
+          const currentNow = Date.now();
           this.expiresAt = Number(payload && payload.cooldown && payload.cooldown.availableAt) || 0;
-          this.nowMs = Date.now();
+          if (this.expiresAt <= currentNow) {
+            this.localCooldownUntil = 0;
+          }
+          this.nowMs = currentNow;
           this.timerError = "";
         } catch {
           this.timerError = "Не удалось проверить состояние вызова.";
@@ -687,8 +694,10 @@
           }
 
           const payload = await response.json();
+          const currentNow = Date.now();
           this.expiresAt = Number(payload && payload.cooldown && payload.cooldown.availableAt) || 0;
-          this.nowMs = Date.now();
+          this.localCooldownUntil = currentNow + WAIT_SEC * 1000;
+          this.nowMs = currentNow;
           this.timerError = "";
         } catch (error) {
           this.timerError = error instanceof Error ? error.message : "Не удалось отправить вызов";
