@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <%- include("../partials/head", { pageTitle }) %>
+  </head>
+  <body>
+    <script id="public-menu-data" type="application/json"><%- serialize(publicMenuModel) %></script>
+
+    <div x-data="publicMenuPage('public-menu-data')">
+      <main class="motion-page min-h-dvh pb-10">
+        <section class="relative overflow-hidden bg-giotto-navy-deep text-white">
+          <div class="absolute inset-0 opacity-45">
+            <img src="<%= restaurant.profile.banner %>" alt="" class="h-full w-full object-cover" />
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-br from-giotto-navy-deep via-giotto-navy-deep/80 to-giotto-navy/45"></div>
+          <div class="absolute -right-20 top-10 h-56 w-56 rounded-full bg-giotto-gold/25 blur-3xl"></div>
+          <div class="absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+
+          <div class="relative mx-auto flex min-h-[28rem] max-w-6xl flex-col justify-between px-4 py-5 sm:min-h-[32rem] sm:px-6 lg:px-8" style="padding-top:max(1.25rem,var(--safe-top));">
+            <header class="flex items-center justify-between gap-4">
+              <a href="/" class="motion-action flex items-center gap-3 rounded-full border border-white/18 bg-white/10 px-3 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-md" aria-label="<%= restaurant.profile.name %>">
+                <span class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-white">
+                  <img src="<%= restaurant.profile.logo %>" alt="" class="h-full w-full object-cover" />
+                </span>
+                <span class="hidden min-w-0 sm:block">
+                  <span class="block truncate font-serif text-xl font-semibold leading-none"><%= restaurant.profile.name %></span>
+                  <span class="mt-1 block text-[11px] uppercase tracking-[0.18em] text-white/66">Public menu</span>
+                </span>
+              </a>
+              <a href="/guest" class="motion-action rounded-full border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md hover:bg-white hover:text-giotto-navy">
+                Я за столом
+              </a>
+            </header>
+
+            <div class="max-w-3xl pb-8 pt-20 sm:pb-10 sm:pt-24">
+              <p class="text-xs font-bold uppercase tracking-[0.28em] text-giotto-gold-soft">Меню ресторана</p>
+              <h1 class="mt-4 font-serif text-5xl font-semibold leading-[0.9] tracking-[-0.035em] text-white sm:text-7xl lg:text-8xl">
+                <%= restaurant.profile.name %>
+              </h1>
+              <p class="mt-5 max-w-2xl text-base leading-7 text-white/78 sm:text-lg">
+                <%= restaurant.profile.description || restaurant.profile.subtitle %>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+          <div x-show="!selectedCategoryId" x-transition.opacity>
+            <div class="mb-5 flex flex-col gap-2 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="font-sans text-[11px] font-bold uppercase tracking-[0.22em] text-giotto-gold">Выберите раздел</p>
+                <h2 class="mt-2 font-serif text-4xl font-semibold tracking-[-0.025em] text-giotto-navy-deep sm:text-5xl">Категории</h2>
+              </div>
+              <p class="max-w-md text-sm leading-6 text-giotto-muted">
+                Откройте категорию, чтобы посмотреть блюда, состав, порцию и цену. Заказ и вызов официанта доступны только после входа за столом.
+              </p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+              <template x-for="category in categories" :key="category.id">
+                <button
+                  type="button"
+                  class="motion-surface group overflow-hidden rounded-[1.65rem] border border-[#ece5d8] bg-white text-left shadow-[0_16px_45px_rgba(8,29,54,0.08)] transition hover:-translate-y-1 hover:border-giotto-gold/60 hover:shadow-card"
+                  @click="openCategory(category.id)"
+                >
+                  <div class="relative aspect-[1.18] overflow-hidden bg-giotto-line">
+                    <img :src="categoryCover(category.id)" :alt="category.labelRu" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-giotto-navy-deep/70 via-transparent to-transparent"></div>
+                    <div class="absolute bottom-3 left-3 rounded-full bg-white/92 px-3 py-1 text-xs font-bold text-giotto-navy shadow-lift" x-text="`${dishCount(category.id)} блюд`"></div>
+                  </div>
+                  <div class="p-4 sm:p-5">
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-giotto-gold" x-text="category.icon || 'Giotto'"></p>
+                    <h3 class="mt-2 font-serif text-3xl font-semibold leading-none text-giotto-navy-deep" x-text="category.labelRu"></h3>
+                    <p class="mt-3 min-h-[2.5rem] text-sm leading-5 text-giotto-muted" x-text="categoryPreview(category.id) || 'Скоро добавим блюда в этот раздел.'"></p>
+                    <span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-giotto-navy">
+                      Открыть меню
+                      <span class="transition group-hover:translate-x-1">→</span>
+                    </span>
+                  </div>
+                </button>
+              </template>
+            </div>
+
+            <div x-show="categories.length === 0" class="motion-surface rounded-giotto-lg border border-giotto-line bg-white px-5 py-10 text-center text-sm text-giotto-muted" style="display:none">
+              Меню пока готовится к публикации.
+            </div>
+          </div>
+
+          <div x-cloak x-show="selectedCategoryId" x-transition.opacity style="display:none">
+            <div class="sticky top-0 z-20 -mx-4 mb-5 border-b border-giotto-line/70 bg-giotto-paper/92 px-4 py-3 backdrop-blur-md sm:static sm:mx-0 sm:mb-7 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+              <button type="button" class="motion-action mb-3 inline-flex items-center gap-2 rounded-full border border-giotto-line bg-white px-4 py-2 text-sm font-bold text-giotto-navy shadow-lift hover:border-giotto-navy" @click="closeCategory()">
+                ← Все категории
+              </button>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="font-sans text-[11px] font-bold uppercase tracking-[0.22em] text-giotto-gold">Раздел меню</p>
+                  <h2 class="mt-1 font-serif text-4xl font-semibold tracking-[-0.025em] text-giotto-navy-deep sm:text-5xl" x-text="selectedCategory ? selectedCategory.labelRu : 'Меню'"></h2>
+                </div>
+                <p class="text-sm font-semibold text-giotto-muted" x-text="`${selectedDishes.length} блюд`"></p>
+              </div>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+              <template x-for="dish in selectedDishes" :key="dish.id">
+                <article class="motion-surface group flex overflow-hidden rounded-[1.5rem] border border-[#ece5d8] bg-white shadow-[0_12px_34px_rgba(8,29,54,0.075)] transition hover:-translate-y-0.5 hover:border-giotto-gold/50 hover:shadow-card sm:block">
+                  <button type="button" class="grid w-full grid-cols-[7.25rem_1fr] text-left sm:block" @click="openDish(dish.id)">
+                    <div class="relative min-h-[8.75rem] overflow-hidden bg-giotto-line sm:aspect-[1.35] sm:min-h-0">
+                      <img :src="dish.image" :alt="dish.nameRu" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+                      <template x-if="dish.badgeLabel">
+                        <span class="absolute left-2 top-2 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-giotto-navy shadow-lift" x-text="dish.badgeLabel"></span>
+                      </template>
+                    </div>
+                    <div class="flex min-h-[8.75rem] flex-col p-3.5 sm:min-h-[14rem] sm:p-5">
+                      <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-giotto-gold" x-text="dish.nameIt"></p>
+                      <h3 class="mt-1 line-clamp-2 font-serif text-2xl font-semibold leading-none text-giotto-navy-deep sm:text-3xl" x-text="dish.nameRu"></h3>
+                      <p class="mt-2 line-clamp-2 text-sm leading-5 text-giotto-muted" x-text="dish.description"></p>
+                      <div class="mt-auto flex items-end justify-between gap-3 pt-4">
+                        <div>
+                          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-giotto-muted">Порция</p>
+                          <p class="mt-0.5 text-sm font-semibold text-giotto-navy-deep" x-text="dish.portion"></p>
+                        </div>
+                        <p class="shrink-0 text-base font-extrabold text-giotto-navy" x-text="formatPrice(dish.price)"></p>
+                      </div>
+                    </div>
+                  </button>
+                </article>
+              </template>
+            </div>
+
+            <div x-show="selectedDishes.length === 0" class="motion-surface rounded-giotto-lg border border-giotto-line bg-white px-5 py-10 text-center text-sm text-giotto-muted" style="display:none">
+              В этой категории пока нет доступных блюд.
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div x-cloak x-show="sheet" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center" style="display:none">
+        <button type="button" class="motion-overlay-enter absolute inset-0 bg-giotto-navy-deep/60" aria-label="Закрыть" @click="closeDish()"></button>
+        <div class="motion-panel-enter relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border border-giotto-line bg-white p-4 shadow-card sm:m-5 sm:max-w-3xl sm:rounded-[2rem] sm:p-5">
+          <template x-if="sheet">
+            <article class="grid gap-5 sm:grid-cols-[0.95fr_1fr] sm:items-start">
+              <div class="relative aspect-[1.15] overflow-hidden rounded-[1.4rem] bg-giotto-line">
+                <img :src="sheet.image" :alt="sheet.nameRu" loading="eager" decoding="async" class="h-full w-full object-cover" />
+                <button type="button" class="motion-action absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/92 text-xl font-semibold text-giotto-navy shadow-lift" aria-label="Закрыть" @click="closeDish()">×</button>
+              </div>
+              <div class="sm:py-2">
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-giotto-gold" x-text="sheet.category"></p>
+                <h2 class="mt-2 font-serif text-4xl font-semibold leading-none tracking-[-0.02em] text-giotto-navy-deep sm:text-5xl" x-text="sheet.nameRu"></h2>
+                <p class="mt-1 text-sm font-semibold text-giotto-muted" x-text="sheet.nameIt"></p>
+                <p class="mt-4 text-base leading-7 text-giotto-ink" x-text="sheet.description"></p>
+
+                <div class="mt-5 grid grid-cols-3 gap-2">
+                  <div class="rounded-giotto-lg border border-giotto-line bg-giotto-cream px-3 py-3">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-giotto-muted">Порция</p>
+                    <p class="mt-1 text-sm font-bold text-giotto-navy-deep" x-text="sheet.portion"></p>
+                  </div>
+                  <div class="rounded-giotto-lg border border-giotto-line bg-giotto-cream px-3 py-3">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-giotto-muted">Ккал</p>
+                    <p class="mt-1 text-sm font-bold text-giotto-navy-deep" x-text="sheet.energyKcal || '-'"></p>
+                  </div>
+                  <div class="rounded-giotto-lg border border-giotto-line bg-giotto-cream px-3 py-3">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-giotto-muted">Цена</p>
+                    <p class="mt-1 text-sm font-bold text-giotto-navy-deep" x-text="formatPrice(sheet.price)"></p>
+                  </div>
+                </div>
+
+                <button type="button" class="motion-action mt-5 w-full rounded-giotto-lg bg-giotto-navy px-5 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-lift hover:bg-giotto-navy-deep" @click="closeDish()">
+                  Вернуться к меню
+                </button>
+              </div>
+            </article>
+          </template>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -6,9 +6,22 @@ import { loadRestaurantViewModel, loadTableViewModel } from "../views";
 export function createWebRouter() {
   const web = Router();
 
-  web.get("/", (_req, res) => {
-    res.redirect("/guest");
-  });
+  web.get(
+    "/",
+    asyncHandler(async (_req, res) => {
+      const { restaurant, profile } = await loadRestaurantViewModel();
+
+      res.render("pages/public-menu", {
+        pageTitle: `${profile.name} · Меню`,
+        restaurant,
+        publicMenuModel: {
+          profile,
+          categories: restaurant.categories,
+          dishes: restaurant.dishes,
+        },
+      });
+    }),
+  );
 
   web.all(/^\/(?:login|manager(?:\/.*)?|waiter(?:\/.*)?|restaurants(?:\/.*)?)$/, (_req, res) => {
     res.redirect("/guest");

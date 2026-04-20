@@ -399,6 +399,88 @@
     };
   }
 
+  function publicMenuPage(configId) {
+    const config = readJsonScript(configId);
+    const dishMap = buildDishMap(config.dishes);
+
+    return {
+      selectedCategoryId: "",
+      sheet: null,
+      profile: config.profile || {},
+      categories: Array.isArray(config.categories) ? config.categories : [],
+      dishes: Array.isArray(config.dishes) ? config.dishes : [],
+
+      get availableDishes() {
+        return this.dishes.filter((dish) => dish && dish.available !== false);
+      },
+
+      get selectedCategory() {
+        return this.categories.find((category) => category.id === this.selectedCategoryId) || null;
+      },
+
+      get selectedDishes() {
+        return this.dishesForCategory(this.selectedCategoryId);
+      },
+
+      formatPrice,
+
+      dishCount(categoryId) {
+        return this.dishesForCategory(categoryId).length;
+      },
+
+      dishesForCategory(categoryId) {
+        return this.availableDishes
+          .filter((dish) => dish.category === categoryId)
+          .map((dish) => ({
+            ...dish,
+            image: optimizeMenuImageUrl(dish.image, 720),
+          }));
+      },
+
+      categoryCover(categoryId) {
+        const dish = this.availableDishes.find((item) => item.category === categoryId);
+        return optimizeMenuImageUrl((dish && dish.image) || this.profile.banner || this.profile.logo || "", 720);
+      },
+
+      categoryPreview(categoryId) {
+        return this.dishesForCategory(categoryId)
+          .slice(0, 3)
+          .map((dish) => dish.nameRu)
+          .join(" · ");
+      },
+
+      openCategory(categoryId) {
+        this.selectedCategoryId = categoryId;
+        this.sheet = null;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+
+      closeCategory() {
+        this.selectedCategoryId = "";
+        this.sheet = null;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+
+      openDish(dishId) {
+        const dish = dishMap.get(dishId);
+        if (!dish || dish.available === false) {
+          return;
+        }
+
+        const category = this.categories.find((item) => item.id === dish.category);
+        this.sheet = {
+          ...dish,
+          image: optimizeMenuImageUrl(dish.image, 1200),
+          category: category ? category.labelRu : "Меню",
+        };
+      },
+
+      closeDish() {
+        this.sheet = null;
+      },
+    };
+  }
+
   function cartPage(configId) {
     const config = readJsonScript(configId);
     const dishMap = buildDishMap(config.dishes);
@@ -630,6 +712,7 @@
     window.Alpine.data("reviewPrompt", reviewPrompt);
     window.Alpine.data("guestHub", guestHub);
     window.Alpine.data("menuPage", menuPage);
+    window.Alpine.data("publicMenuPage", publicMenuPage);
     window.Alpine.data("cartPage", cartPage);
     window.Alpine.data("waiterPage", waiterPage);
     window.Alpine.__giottoGuestRegistered = true;
