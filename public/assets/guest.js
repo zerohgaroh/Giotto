@@ -609,7 +609,7 @@
       init() {
         this.tickInterval = window.setInterval(() => {
           this.nowMs = Date.now();
-        }, 1000);
+        }, 250);
 
         this.syncCooldown();
       },
@@ -662,7 +662,8 @@
           const payload = await response.json();
           const currentNow = Date.now();
           this.expiresAt = Number(payload && payload.cooldown && payload.cooldown.availableAt) || 0;
-          if (this.expiresAt <= currentNow) {
+          // Do not wipe optimistic local cooldown if a request was just sent.
+          if (this.expiresAt <= currentNow && this.localCooldownUntil <= currentNow) {
             this.localCooldownUntil = 0;
           }
           this.nowMs = currentNow;
