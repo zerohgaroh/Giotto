@@ -78,14 +78,10 @@
               </div>
             </div>
 
-            <div class="mt-6 w-full overflow-hidden pb-2 text-center transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" :class="requested ? 'h-[7rem]' : 'h-[1.5rem]'">
+            <div class="mt-6 w-full overflow-hidden text-center transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" :class="requested ? 'h-[5.2rem]' : 'h-[0rem]'">
               <div class="relative h-full">
-                <div class="absolute inset-0 pb-2 transition-all duration-350 ease-out" :class="requested ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 pointer-events-none'">
+                <div class="absolute inset-0 transition-all duration-350 ease-out" :class="requested ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 pointer-events-none'">
                   <p class="font-mono text-[clamp(2.9rem,14vw,3.5rem)] font-semibold tabular-nums tracking-[-0.04em] text-giotto-navy-deep" aria-live="polite" aria-atomic="true" x-text="formatCountdown(remaining)"></p>
-                  <span class="mt-0.5 block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">до повторного вызова</span>
-                </div>
-                <div class="absolute inset-0 transition-all duration-350 ease-out" :class="requested ? '-translate-y-2 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'">
-                  <span class="block font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-giotto-muted">Таймер начнётся после нажатия</span>
                 </div>
               </div>
             </div>
