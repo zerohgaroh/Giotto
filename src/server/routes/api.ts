@@ -1144,6 +1144,20 @@ export function createApiRouter() {
   );
 
   api.post(
+    "/staff/manager/waiters/:waiterId/delete",
+    requireStaffAuth({ role: "manager" }),
+    asyncHandler(async (req, res) => {
+      jsonNoStore(
+        res,
+        await deleteManagerWaiter({
+          managerId: req.staffSession!.userId,
+          waiterId: paramString(req.params.waiterId),
+        }),
+      );
+    }),
+  );
+
+  api.post(
     "/staff/manager/waiters/:waiterId/reset-password",
     requireStaffAuth({ role: "manager" }),
     asyncHandler(async (req, res) => {
