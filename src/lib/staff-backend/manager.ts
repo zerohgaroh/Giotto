@@ -973,6 +973,56 @@ export async function replaceManagerWaiterAssignments(input: {
   return buildManagerWaiterDetail(waiter.id);
 }
 
+export async function deleteManagerWaiter(input: {
+  managerId: string;
+  waiterId: string;
+}): Promise<{ ok: true }> {
+  await ensureManager(input.managerId);
+
+  const waiter = await prisma.staffUser.findFirst({
+    where: {
+      id: input.waiterId,
+      role: "waiter",
+    },
+    select: {
+      id: true,
+      name: true,
+      login: true,
+    },
+  });
+
+  if (!waiter) {
+    throw new ApiError(404, "Waiter not found");
+  }
+
+  const detail = await buildManagerWaiterDetail(waiter.id);
+  if (!detail.canDeactivate) {
+    throw new ApiError(409, "Reassign waiter tables before deletion");
+  }
+  if (detail.activeSessionTableIds.length > 0) {
+    throw new ApiError(409, "Cannot delete waiter with active table sessions");
+  }
+
+  await prisma.staffUser.delete({
+    where: { id: waiter.id },
+  });
+
+  const events = await appendActivityEvents([
+    {
+      type: "waiter:deactivated",
+      actorRole: "manager",
+      actorId: input.managerId,
+      payload: {
+        waiterId: waiter.id,
+        action: "deleted",
+      },
+    },
+  ]);
+  publishActivityEvents(events);
+
+  return { ok: true };
+}
+
 export async function getManagerMenuSnapshot(managerId: string): Promise<ManagerMenuSnapshot> {
   await ensureManager(managerId);
   const restaurant = await getRestaurantData();

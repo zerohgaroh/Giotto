@@ -6,7 +6,7 @@ import { loadRealtimeBacklog } from "../../lib/staff-backend/activity";
 import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "../../lib/staff-backend/auth";
 import { getStaffBootstrap } from "../../lib/staff-backend/bootstrap";
 import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "../../lib/staff-backend/guest";
-import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerReviews, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable, getManagerRestaurantSettings, updateManagerRestaurantSettings } from "../../lib/staff-backend/manager";
+import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerReviews, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, deleteManagerWaiter, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable, getManagerRestaurantSettings, updateManagerRestaurantSettings } from "../../lib/staff-backend/manager";
 import { readManagerMenuImage, saveManagerMenuImage } from "../../lib/staff-backend/menu-images";
 import { ApiError } from "../../lib/staff-backend/projections";
 import { parseOptionalInt, parseTableId } from "../../lib/staff-backend/route-parsers";
@@ -1124,6 +1124,20 @@ export function createApiRouter() {
             login: typeof body.login === "string" ? body.login : undefined,
             active: typeof body.active === "boolean" ? body.active : undefined,
           },
+        }),
+      );
+    }),
+  );
+
+  api.delete(
+    "/staff/manager/waiters/:waiterId",
+    requireStaffAuth({ role: "manager" }),
+    asyncHandler(async (req, res) => {
+      jsonNoStore(
+        res,
+        await deleteManagerWaiter({
+          managerId: req.staffSession!.userId,
+          waiterId: paramString(req.params.waiterId),
         }),
       );
     }),
