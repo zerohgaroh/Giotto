@@ -1133,6 +1133,12 @@ export function createApiRouter() {
     "/staff/manager/waiters/:waiterId",
     requireStaffAuth({ role: "manager" }),
     asyncHandler(async (req, res) => {
+      console.info("[waiter-delete] route_hit", {
+        method: req.method,
+        path: req.originalUrl,
+        managerId: req.staffSession!.userId,
+        waiterId: paramString(req.params.waiterId),
+      });
       jsonNoStore(
         res,
         await deleteManagerWaiter({
@@ -1147,6 +1153,12 @@ export function createApiRouter() {
     "/staff/manager/waiters/:waiterId/delete",
     requireStaffAuth({ role: "manager" }),
     asyncHandler(async (req, res) => {
+      console.info("[waiter-delete] route_hit_fallback", {
+        method: req.method,
+        path: req.originalUrl,
+        managerId: req.staffSession!.userId,
+        waiterId: paramString(req.params.waiterId),
+      });
       jsonNoStore(
         res,
         await deleteManagerWaiter({

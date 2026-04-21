@@ -977,49 +977,84 @@ export async function deleteManagerWaiter(input: {
   managerId: string;
   waiterId: string;
 }): Promise<{ ok: true }> {
-  await ensureManager(input.managerId);
-
-  const waiter = await prisma.staffUser.findFirst({
-    where: {
-      id: input.waiterId,
-      role: "waiter",
-    },
-    select: {
-      id: true,
-      name: true,
-      login: true,
-    },
+  console.info("[waiter-delete] request_received", {
+    managerId: input.managerId,
+    waiterId: input.waiterId,
   });
 
-  if (!waiter) {
-    throw new ApiError(404, "Waiter not found");
-  }
+  try {
+    await ensureManager(input.managerId);
 
-  const detail = await buildManagerWaiterDetail(waiter.id);
-  if (detail.tableIds.length > 0) {
-    // Auto-unassign all active table links so manager can delete in one step.
-    await replaceAssignments(waiter.id, [], input.managerId);
-  }
-
-  await prisma.staffUser.delete({
-    where: { id: waiter.id },
-  });
-
-  const events = await appendActivityEvents([
-    {
-      type: "waiter:deactivated",
-      actorRole: "manager",
-      actorId: input.managerId,
-      payload: {
-        waiterId: waiter.id,
-        action: "deleted",
-        removedTableIds: detail.tableIds,
+    const waiter = await prisma.staffUser.findFirst({
+      where: {
+        id: input.waiterId,
+        role: "waiter",
       },
-    },
-  ]);
-  publishActivityEvents(events);
+      select: {
+        id: true,
+        name: true,
+        login: true,
+      },
+    });
 
-  return { ok: true };
+    if (!waiter) {
+      console.warn("[waiter-delete] waiter_not_found", {
+        managerId: input.managerId,
+        waiterId: input.waiterId,
+      });
+      throw new ApiError(404, "Waiter not found");
+    }
+
+    const detail = await buildManagerWaiterDetail(waiter.id);
+    console.info("[waiter-delete] waiter_state", {
+      waiterId: waiter.id,
+      login: waiter.login,
+      assignedTables: detail.tableIds,
+      activeSessionTableIds: detail.activeSessionTableIds,
+      canDeactivate: detail.canDeactivate,
+    });
+
+    if (detail.tableIds.length > 0) {
+      // Auto-unassign all active table links so manager can delete in one step.
+      await replaceAssignments(waiter.id, [], input.managerId);
+      console.info("[waiter-delete] assignments_cleared", {
+        waiterId: waiter.id,
+        removedTableIds: detail.tableIds,
+      });
+    }
+
+    await prisma.staffUser.delete({
+      where: { id: waiter.id },
+    });
+    console.info("[waiter-delete] waiter_deleted", {
+      waiterId: waiter.id,
+      login: waiter.login,
+    });
+
+    const events = await appendActivityEvents([
+      {
+        type: "waiter:deactivated",
+        actorRole: "manager",
+        actorId: input.managerId,
+        payload: {
+          waiterId: waiter.id,
+          action: "deleted",
+          removedTableIds: detail.tableIds,
+        },
+      },
+    ]);
+    publishActivityEvents(events);
+
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[waiter-delete] failed", {
+      managerId: input.managerId,
+      waiterId: input.waiterId,
+      error: message,
+    });
+    throw error;
+  }
 }
 
 export async function getManagerMenuSnapshot(managerId: string): Promise<ManagerMenuSnapshot> {
