@@ -996,11 +996,9 @@ export async function deleteManagerWaiter(input: {
   }
 
   const detail = await buildManagerWaiterDetail(waiter.id);
-  if (!detail.canDeactivate) {
-    throw new ApiError(409, "Reassign waiter tables before deletion");
-  }
-  if (detail.activeSessionTableIds.length > 0) {
-    throw new ApiError(409, "Cannot delete waiter with active table sessions");
+  if (detail.tableIds.length > 0) {
+    // Auto-unassign all active table links so manager can delete in one step.
+    await replaceAssignments(waiter.id, [], input.managerId);
   }
 
   await prisma.staffUser.delete({
@@ -1015,6 +1013,7 @@ export async function deleteManagerWaiter(input: {
       payload: {
         waiterId: waiter.id,
         action: "deleted",
+        removedTableIds: detail.tableIds,
       },
     },
   ]);
