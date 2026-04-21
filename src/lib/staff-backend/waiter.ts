@@ -12,6 +12,7 @@ import {
 } from "./projections";
 import { appendActivityEvents, publishActivityEvents } from "./activity";
 import { getReviewHistoryPage, getWaiterReviewMetrics } from "./reviews";
+import { getReviewPromptTtlMs } from "./review-prompt-config";
 import type {
   PushDeviceRegistration,
   RepeatLastOrderInput,
@@ -897,8 +898,10 @@ export async function markWaiterDone(input: {
 
   const now = new Date();
   const doneCooldownUntil = new Date(now.getTime() + 30_000);
-  const expiresAt = new Date(now.getTime() + 60_000);
+  const reviewPromptTtlMs = getReviewPromptTtlMs();
+  const expiresAt = new Date(now.getTime() + reviewPromptTtlMs);
   let tableSessionId = "";
+  let reviewPromptId = "";
 
   await prisma.$transaction(async (tx) => {
     const session = await ensureActiveSession(input.tableId, tx, now);
@@ -911,7 +914,7 @@ export async function markWaiterDone(input: {
       },
     });
 
-    await tx.reviewPrompt.create({
+    const prompt = await tx.reviewPrompt.create({
       data: {
         tableSessionId: session.id,
         tableId: input.tableId,
@@ -920,6 +923,16 @@ export async function markWaiterDone(input: {
         expiresAt,
       },
     });
+    reviewPromptId = prompt.id;
+  });
+
+  console.info("[review-prompt] waiter_done_created", {
+    tableId: input.tableId,
+    waiterId: input.waiterId,
+    tableSessionId,
+    reviewPromptId,
+    expiresAt: expiresAt.toISOString(),
+    ttlMs: reviewPromptTtlMs,
   });
 
   const events = await appendActivityEvents([
@@ -951,7 +964,8 @@ export async function finishWaiterTable(input: {
   }
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 60_000);
+  const reviewPromptTtlMs = getReviewPromptTtlMs();
+  const expiresAt = new Date(now.getTime() + reviewPromptTtlMs);
   let reviewPromptId = "";
   let completedTaskIds: string[] = [];
 
@@ -1021,6 +1035,15 @@ export async function finishWaiterTable(input: {
         doneCooldownUntil: now,
       },
     });
+  });
+
+  console.info("[review-prompt] finish_table_created", {
+    tableId: input.tableId,
+    waiterId: input.waiterId,
+    tableSessionId: activeSession.id,
+    reviewPromptId,
+    expiresAt: expiresAt.toISOString(),
+    ttlMs: reviewPromptTtlMs,
   });
 
   const events = await appendActivityEvents([
@@ -1169,11 +1192,21 @@ export async function getWaiterReviews(input: {
   limit?: number;
 }): Promise<ReviewHistoryPage> {
   await loadWaiterProfile(input.waiterId);
-  return getReviewHistoryPage({
+  const page = await getReviewHistoryPage({
     waiterId: input.waiterId,
     cursor: input.cursor,
     limit: input.limit,
   });
+  console.info("[reviews] waiter_history_loaded", {
+    waiterId: input.waiterId,
+    cursor: input.cursor ?? null,
+    limit: input.limit ?? null,
+    items: page.items.length,
+    nextCursor: page.nextCursor ?? null,
+    reviewsCountAllTime: page.analytics.reviewsCount,
+    avgRatingAllTime: page.analytics.avgRating,
+  });
+  return page;
 }
 
 export async function registerPushDevice(

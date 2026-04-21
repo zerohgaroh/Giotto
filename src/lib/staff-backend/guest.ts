@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { pushWaiterCallNotification, pushWaiterServiceAlert } from "./notifications";
 import { ApiError, ensureActiveSession, getAssignedWaiterId, toCooldownState } from "./projections";
+import { getReviewPromptSubmitGraceMs } from "./review-prompt-config";
 import { ensureStaffBackendReady } from "./seed";
 import { appendActivityEvents, publishActivityEvents } from "./activity";
 import type { CooldownState, Review, ServiceRequestType, WaiterOrderInput } from "./types";
@@ -342,38 +343,88 @@ export async function submitGuestReview(input: {
   await ensureStaffBackendReady();
   const rating = Math.max(1, Math.min(5, Math.floor(input.rating)));
   const now = new Date();
+  const normalizedComment = input.comment?.trim() || undefined;
+  const graceMs = getReviewPromptSubmitGraceMs();
+  const promptNotOlderThan = new Date(now.getTime() - graceMs);
+
+  console.info("[guest-review] submit_attempt", {
+    tableId: input.tableId,
+    rating,
+    commentLength: normalizedComment?.length ?? 0,
+    now: now.toISOString(),
+  });
 
   const prompt = await prisma.reviewPrompt.findFirst({
     where: {
       tableId: input.tableId,
       resolvedAt: null,
-      expiresAt: { gt: now },
+      expiresAt: { gt: promptNotOlderThan },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ expiresAt: "desc" }, { createdAt: "desc" }],
   });
 
   if (!prompt) {
-    throw new ApiError(409, "Review prompt is not active");
+    console.warn("[guest-review] prompt_not_found", {
+      tableId: input.tableId,
+      now: now.toISOString(),
+      graceMs,
+    });
+    throw new ApiError(409, "Окно для отзыва уже закрыто. Попросите официанта завершить обслуживание снова.");
   }
 
-  const review = await prisma.$transaction(async (tx) => {
-    const created = await tx.guestReview.create({
-      data: {
-        tableSessionId: prompt.tableSessionId,
+  const promptExpired = prompt.expiresAt.getTime() <= now.getTime();
+  if (promptExpired) {
+    console.info("[guest-review] accepting_expired_prompt_with_grace", {
+      tableId: input.tableId,
+      reviewPromptId: prompt.id,
+      tableSessionId: prompt.tableSessionId,
+      waiterId: prompt.waiterId ?? null,
+      promptExpiresAt: prompt.expiresAt.toISOString(),
+      graceMs,
+    });
+  }
+
+  const review = await prisma
+    .$transaction(async (tx) => {
+      const created = await tx.guestReview.create({
+        data: {
+          tableSessionId: prompt.tableSessionId,
+          tableId: input.tableId,
+          waiterId: prompt.waiterId,
+          rating,
+          comment: normalizedComment,
+          createdAt: now,
+        },
+      });
+
+      await tx.reviewPrompt.update({
+        where: { id: prompt.id },
+        data: { resolvedAt: now },
+      });
+
+      return created;
+    })
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn("[guest-review] submit_failed", {
         tableId: input.tableId,
-        waiterId: prompt.waiterId,
-        rating,
-        comment: input.comment?.trim() || undefined,
-        createdAt: now,
-      },
+        reviewPromptId: prompt.id,
+        tableSessionId: prompt.tableSessionId,
+        waiterId: prompt.waiterId ?? null,
+        error: message,
+      });
+      throw error;
     });
 
-    await tx.reviewPrompt.update({
-      where: { id: prompt.id },
-      data: { resolvedAt: now },
-    });
-
-    return created;
+  console.info("[guest-review] submitted", {
+    tableId: input.tableId,
+    reviewPromptId: prompt.id,
+    reviewId: review.id,
+    tableSessionId: review.tableSessionId,
+    waiterId: review.waiterId ?? null,
+    rating: review.rating,
+    hasComment: Boolean(review.comment),
+    acceptedInGraceWindow: promptExpired,
   });
 
   const events = await appendActivityEvents([

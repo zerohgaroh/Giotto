@@ -5,6 +5,7 @@ import { hashPassword } from "./password";
 import { prisma } from "./prisma";
 import { buildGuestTableLink } from "./public-url";
 import { getReviewHistoryPage, getWaiterReviewMetricsMap } from "./reviews";
+import { getReviewPromptTtlMs } from "./review-prompt-config";
 import {
   ApiError,
   asFloorPlan,
@@ -625,7 +626,8 @@ export async function closeManagerTable(input: {
   }
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 60_000);
+  const reviewPromptTtlMs = getReviewPromptTtlMs();
+  const expiresAt = new Date(now.getTime() + reviewPromptTtlMs);
   let reviewPromptId = "";
 
   await prisma.$transaction(async (tx) => {
@@ -677,6 +679,16 @@ export async function closeManagerTable(input: {
         closedAt: now,
       },
     });
+  });
+
+  console.info("[review-prompt] manager_close_created", {
+    tableId: input.tableId,
+    managerId: input.managerId,
+    waiterId: assignedWaiterId ?? null,
+    tableSessionId: session.id,
+    reviewPromptId,
+    expiresAt: expiresAt.toISOString(),
+    ttlMs: reviewPromptTtlMs,
   });
 
   const events = await appendActivityEvents([
@@ -809,11 +821,22 @@ export async function getManagerReviews(input: {
     }
   }
 
-  return getReviewHistoryPage({
+  const page = await getReviewHistoryPage({
     waiterId,
     cursor: input.cursor,
     limit: input.limit,
   });
+  console.info("[reviews] manager_history_loaded", {
+    managerId: input.managerId,
+    waiterId: waiterId ?? null,
+    cursor: input.cursor ?? null,
+    limit: input.limit ?? null,
+    items: page.items.length,
+    nextCursor: page.nextCursor ?? null,
+    reviewsCountAllTime: page.analytics.reviewsCount,
+    avgRatingAllTime: page.analytics.avgRating,
+  });
+  return page;
 }
 
 export async function createManagerWaiter(input: {

@@ -144,6 +144,7 @@
 
   function reviewPrompt(configId) {
     const config = readJsonScript(configId);
+    const defaultExpiryMs = 300_000;
 
     return {
       tableId: config.tableId || "",
@@ -153,6 +154,7 @@
       open: false,
       rating: 5,
       comment: "",
+      submitError: "",
       submitting: false,
       expiresAt: 0,
       eventSource: null,
@@ -177,9 +179,10 @@
           }
 
           const expiresAt = Number(payload.payload && payload.payload.expiresAt);
-          this.expiresAt = Number.isFinite(expiresAt) ? expiresAt : Date.now() + 60_000;
+          this.expiresAt = Number.isFinite(expiresAt) ? expiresAt : Date.now() + defaultExpiryMs;
           this.rating = 5;
           this.comment = "";
+          this.submitError = "";
           this.open = true;
           this.syncExpiryTimer();
         });
@@ -236,6 +239,7 @@
       closePrompt() {
         this.open = false;
         this.expiresAt = 0;
+        this.submitError = "";
 
         if (this.expiryTimer) {
           window.clearTimeout(this.expiryTimer);
@@ -249,6 +253,7 @@
         }
 
         this.submitting = true;
+        this.submitError = "";
         try {
           const response = await fetch(this.reviewUrl, {
             method: "POST",
@@ -262,12 +267,32 @@
           });
 
           if (!response.ok) {
-            throw new Error("Review submit failed");
+            let message = "Не удалось отправить отзыв. Попробуйте ещё раз.";
+            try {
+              const payload = await response.json();
+              if (payload && typeof payload.error === "string" && payload.error.trim()) {
+                message = payload.error.trim();
+              }
+            } catch {
+              // keep default message
+            }
+            throw new Error(message);
+          }
+
+          let payload;
+          try {
+            payload = await response.json();
+          } catch {
+            throw new Error("Сервер вернул некорректный ответ.");
+          }
+          if (!payload || typeof payload !== "object" || !payload.review) {
+            throw new Error("Сервер не подтвердил сохранение отзыва.");
           }
 
           this.closePrompt();
-        } catch {
+        } catch (error) {
           // keep the prompt open for a second try
+          this.submitError = error instanceof Error && error.message ? error.message : "Не удалось отправить отзыв.";
         } finally {
           this.submitting = false;
         }
