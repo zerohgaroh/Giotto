@@ -271,6 +271,7 @@ model GuestReview {
   waiter         StaffUser?   @relation("ReviewWaiter", fields: [waiterId], references: [id], onDelete: SetNull)
 
   @@index([tableId, createdAt])
+  @@index([waiterId, createdAt])
 }
 
 model ServiceActivityEvent {

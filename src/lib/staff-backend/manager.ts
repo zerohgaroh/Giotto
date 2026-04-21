@@ -4,6 +4,7 @@ import { appendActivityEvents, parseHistoryCursor, publishActivityEvents, serial
 import { hashPassword } from "./password";
 import { prisma } from "./prisma";
 import { buildGuestTableLink } from "./public-url";
+import { getReviewHistoryPage, getWaiterReviewMetricsMap } from "./reviews";
 import {
   ApiError,
   asFloorPlan,
@@ -40,6 +41,7 @@ import type {
   ManagerWaiterSummary,
   MenuCategoryInput,
   ReplaceWaiterAssignmentsInput,
+  ReviewHistoryPage,
   ResetWaiterPasswordInput,
   UpdateLayoutInput,
   UpdateWaiterInput,
@@ -388,7 +390,7 @@ async function replaceAssignments(waiterId: string, tableIds: number[], managerI
 }
 
 async function buildManagerWaiterDetail(waiterId: string): Promise<ManagerWaiterDetail> {
-  const [waiter, waiters, activeSessions] = await Promise.all([
+  const [waiter, waiters, activeSessions, reviewMetricsByWaiter] = await Promise.all([
     prisma.staffUser.findFirst({
       where: { id: waiterId, role: "waiter" },
     }),
@@ -410,11 +412,18 @@ async function buildManagerWaiterDetail(waiterId: string): Promise<ManagerWaiter
       },
       select: { id: true },
     }),
+    getWaiterReviewMetricsMap([waiterId]),
   ]);
 
   if (!waiter) {
     throw new ApiError(404, "Waiter not found");
   }
+
+  const reviewMetrics = reviewMetricsByWaiter.get(waiterId) ?? {
+    avgRatingAllTime: 0,
+    reviewsCountAllTime: 0,
+    commentsCountAllTime: 0,
+  };
 
   const profile = waiters.find((candidate) => candidate.id === waiterId);
   if (!profile) {
@@ -425,6 +434,8 @@ async function buildManagerWaiterDetail(waiterId: string): Promise<ManagerWaiter
       active: waiter.active,
       tableIds: [],
       assignedTablesCount: 0,
+      avgRatingAllTime: reviewMetrics.avgRatingAllTime,
+      reviewsCountAllTime: reviewMetrics.reviewsCountAllTime,
       canDeactivate: true,
       activeSessionTableIds: activeSessions.map((item) => item.id).sort((a, b) => a - b),
     };
@@ -433,6 +444,8 @@ async function buildManagerWaiterDetail(waiterId: string): Promise<ManagerWaiter
   return {
     ...profile,
     assignedTablesCount: profile.tableIds.length,
+    avgRatingAllTime: reviewMetrics.avgRatingAllTime,
+    reviewsCountAllTime: reviewMetrics.reviewsCountAllTime,
     canDeactivate: profile.tableIds.length === 0,
     activeSessionTableIds: activeSessions.map((item) => item.id).sort((a, b) => a - b),
   };
@@ -606,11 +619,15 @@ export async function closeManagerTable(input: {
   await ensureManager(input.managerId);
   const table = await getTableRecordForManager(input.tableId);
   const session = getActiveSession(table);
+  const assignedWaiterId = getAssignedWaiterId(table);
   if (!session) {
     throw new ApiError(409, "There is no active table session");
   }
 
   const now = new Date();
+  const expiresAt = new Date(now.getTime() + 60_000);
+  let reviewPromptId = "";
+
   await prisma.$transaction(async (tx) => {
     await tx.waiterTask.updateMany({
       where: {
@@ -643,6 +660,17 @@ export async function closeManagerTable(input: {
       },
     });
 
+    const prompt = await tx.reviewPrompt.create({
+      data: {
+        tableSessionId: session.id,
+        tableId: input.tableId,
+        waiterId: assignedWaiterId,
+        createdAt: now,
+        expiresAt,
+      },
+    });
+    reviewPromptId = prompt.id;
+
     await tx.tableSession.update({
       where: { id: session.id },
       data: {
@@ -652,6 +680,18 @@ export async function closeManagerTable(input: {
   });
 
   const events = await appendActivityEvents([
+    {
+      type: "waiter:done",
+      actorRole: "manager",
+      actorId: input.managerId,
+      tableId: input.tableId,
+      tableSessionId: session.id,
+      payload: {
+        expiresAt: expiresAt.getTime(),
+        reviewPromptId,
+        action: "closed_by_manager",
+      },
+    },
     {
       type: "table:status_changed",
       actorRole: "manager",
@@ -732,15 +772,48 @@ export async function getManagerHistory(input: {
 export async function listManagerWaiters(managerId: string): Promise<ManagerWaiterSummary[]> {
   await ensureManager(managerId);
   const waiters = await getManagerWaiterProfiles(false);
+  const reviewMetricsByWaiter = await getWaiterReviewMetricsMap(waiters.map((waiter) => waiter.id));
+
   return waiters.map((waiter) => ({
     ...waiter,
     assignedTablesCount: waiter.tableIds.length,
+    avgRatingAllTime: reviewMetricsByWaiter.get(waiter.id)?.avgRatingAllTime ?? 0,
+    reviewsCountAllTime: reviewMetricsByWaiter.get(waiter.id)?.reviewsCountAllTime ?? 0,
   }));
 }
 
 export async function getManagerWaiterDetail(managerId: string, waiterId: string): Promise<ManagerWaiterDetail> {
   await ensureManager(managerId);
   return buildManagerWaiterDetail(waiterId);
+}
+
+export async function getManagerReviews(input: {
+  managerId: string;
+  waiterId?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<ReviewHistoryPage> {
+  await ensureManager(input.managerId);
+
+  const waiterId = input.waiterId?.trim();
+  if (waiterId) {
+    const waiter = await prisma.staffUser.findFirst({
+      where: {
+        id: waiterId,
+        role: "waiter",
+      },
+      select: { id: true },
+    });
+    if (!waiter) {
+      throw new ApiError(404, "Waiter not found");
+    }
+  }
+
+  return getReviewHistoryPage({
+    waiterId,
+    cursor: input.cursor,
+    limit: input.limit,
+  });
 }
 
 export async function createManagerWaiter(input: {

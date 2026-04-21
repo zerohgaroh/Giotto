@@ -6,13 +6,13 @@ import { loadRealtimeBacklog } from "../../lib/staff-backend/activity";
 import { getStaffSession, getWaiterById, loginStaff, logoutStaff, refreshStaffSession } from "../../lib/staff-backend/auth";
 import { getStaffBootstrap } from "../../lib/staff-backend/bootstrap";
 import { createGuestRequest, getGuestRequestCooldown, submitGuestOrder, submitGuestReview } from "../../lib/staff-backend/guest";
-import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable, getManagerRestaurantSettings, updateManagerRestaurantSettings } from "../../lib/staff-backend/manager";
+import { getManagerHall, getManagerHistory, getManagerLayout, getManagerMenuSnapshot, getManagerReviews, getManagerTableDetail, listManagerWaiters, getManagerWaiterDetail, createManagerWaiter, updateManagerWaiter, resetManagerWaiterPassword, replaceManagerWaiterAssignments, createManagerMenuCategory, updateManagerMenuCategory, deleteManagerMenuCategory, createManagerDish, updateManagerDish, deleteManagerDish, toggleManagerDishAvailability, reorderManagerMenu, updateManagerLayout, createManagerTable, archiveManagerTable, restoreManagerTable, reassignManagerTable, closeManagerTable, getManagerRestaurantSettings, updateManagerRestaurantSettings } from "../../lib/staff-backend/manager";
 import { readManagerMenuImage, saveManagerMenuImage } from "../../lib/staff-backend/menu-images";
 import { ApiError } from "../../lib/staff-backend/projections";
 import { parseOptionalInt, parseTableId } from "../../lib/staff-backend/route-parsers";
 import { getRestaurantData } from "../../lib/staff-backend/restaurant";
 import { applyWaiterAssignmentChange, canWaiterReceiveRealtimeEvent } from "../../lib/staff-backend/realtime-access";
-import { getWaiterQueue, getWaiterShiftSummary, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, finishWaiterTable, registerPushDevice } from "../../lib/staff-backend/waiter";
+import { getWaiterQueue, getWaiterShiftSummary, getWaiterReviews, getWaiterShortcuts, getWaiterTableDetail, getWaiterTables, acknowledgeWaiterRequest, acknowledgeWaiterTask, startWaiterTask, completeWaiterTask, createWaiterFollowUpTask, addWaiterOrder, repeatLastWaiterOrder, updateWaiterShortcuts, setWaiterTableNote, markWaiterDone, finishWaiterTable, registerPushDevice } from "../../lib/staff-backend/waiter";
 import { getHallProjection } from "../../lib/staff-backend/projections";
 import { resetStaffSeedData } from "../../lib/staff-backend/seed";
 import { subscribeRealtimeEvents } from "../../lib/waiter-backend/realtime";
@@ -458,6 +458,21 @@ export function createApiRouter() {
     }),
   );
 
+  api.get(
+    "/staff/waiter/reviews",
+    requireStaffAuth({ role: "waiter" }),
+    asyncHandler(async (req, res) => {
+      jsonNoStore(
+        res,
+        await getWaiterReviews({
+          waiterId: req.staffSession!.userId,
+          cursor: typeof req.query.cursor === "string" ? req.query.cursor : undefined,
+          limit: parseOptionalInt(typeof req.query.limit === "string" ? req.query.limit : null, 25),
+        }),
+      );
+    }),
+  );
+
   api
     .route("/staff/waiter/shortcuts")
     .get(
@@ -671,6 +686,22 @@ export function createApiRouter() {
           tableId: parseOptionalInt(typeof req.query.tableId === "string" ? req.query.tableId : null),
           waiterId: typeof req.query.waiterId === "string" ? req.query.waiterId : undefined,
           type: typeof req.query.type === "string" ? req.query.type : undefined,
+          cursor: typeof req.query.cursor === "string" ? req.query.cursor : undefined,
+          limit: parseOptionalInt(typeof req.query.limit === "string" ? req.query.limit : null, 25),
+        }),
+      );
+    }),
+  );
+
+  api.get(
+    "/staff/manager/reviews",
+    requireStaffAuth({ role: "manager" }),
+    asyncHandler(async (req, res) => {
+      jsonNoStore(
+        res,
+        await getManagerReviews({
+          managerId: req.staffSession!.userId,
+          waiterId: typeof req.query.waiterId === "string" ? req.query.waiterId : undefined,
           cursor: typeof req.query.cursor === "string" ? req.query.cursor : undefined,
           limit: parseOptionalInt(typeof req.query.limit === "string" ? req.query.limit : null, 25),
         }),

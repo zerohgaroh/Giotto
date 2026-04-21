@@ -9,7 +9,7 @@ declare global {
 }
 
 const MAINTENANCE_THROTTLE_MS = 30_000;
-const DEFAULT_IDLE_AUTO_CLOSE_MIN = 180;
+const DEFAULT_IDLE_AUTO_CLOSE_MIN = 90;
 const DEFAULT_MAX_SESSION_MIN = 720;
 
 type SessionCloseCandidate = {

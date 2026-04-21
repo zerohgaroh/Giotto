@@ -624,7 +624,11 @@
       get remaining() {
         const serverRemaining = Math.max(0, Math.ceil((this.expiresAt - this.nowMs) / 1000));
         const localRemaining = Math.max(0, Math.ceil((this.localCooldownUntil - this.nowMs) / 1000));
-        return Math.min(WAIT_SEC, Math.max(serverRemaining, localRemaining));
+        // Keep the countdown visually anchored to click time while local cooldown is active.
+        if (localRemaining > 0) {
+          return Math.min(WAIT_SEC, localRemaining);
+        }
+        return Math.min(WAIT_SEC, serverRemaining);
       },
 
       get requested() {
@@ -704,7 +708,11 @@
           const payload = await response.json();
           const syncedNow = Date.now();
           this.expiresAt = Number(payload && payload.cooldown && payload.cooldown.availableAt) || 0;
-          this.localCooldownUntil = syncedNow + WAIT_SEC * 1000;
+          const accepted = payload && typeof payload.accepted === "boolean" ? payload.accepted : true;
+          // If backend rejected (already in cooldown), align local timer to authoritative value.
+          if (!accepted && this.expiresAt > 0) {
+            this.localCooldownUntil = this.expiresAt;
+          }
           this.nowMs = syncedNow;
           this.timerError = "";
         } catch (error) {

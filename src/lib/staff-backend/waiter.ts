@@ -11,9 +11,11 @@ import {
   type TableRecord,
 } from "./projections";
 import { appendActivityEvents, publishActivityEvents } from "./activity";
+import { getReviewHistoryPage, getWaiterReviewMetrics } from "./reviews";
 import type {
   PushDeviceRegistration,
   RepeatLastOrderInput,
+  ReviewHistoryPage,
   WaiterOrderInput,
   WaiterQueueResponse,
   WaiterShiftSummary,
@@ -748,12 +750,22 @@ export async function repeatLastWaiterOrder(input: {
   tableId: number;
   payload: RepeatLastOrderInput;
 }): Promise<WaiterTableDetail> {
-  await getAssignedTableRecord(input.tableId, input.waiterId);
+  const table = await getAssignedTableRecord(input.tableId, input.waiterId);
+  const activeSession = getActiveSession(table);
+
+  if (!activeSession) {
+    throw new ApiError(409, "Active table session was not found");
+  }
+
+  const requestedSessionId = input.payload.sourceSessionId?.trim();
+  if (requestedSessionId && requestedSessionId !== activeSession.id) {
+    throw new ApiError(409, "Repeating orders from past sessions is not allowed");
+  }
 
   const batch = await prisma.waiterOrderBatch.findFirst({
     where: {
       tableId: input.tableId,
-      ...(input.payload.sourceSessionId ? { tableSessionId: input.payload.sourceSessionId } : {}),
+      tableSessionId: activeSession.id,
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -764,7 +776,7 @@ export async function repeatLastWaiterOrder(input: {
   });
 
   if (!batch || batch.billLines.length === 0) {
-    throw new ApiError(409, "No waiter order is available to repeat");
+    throw new ApiError(409, "No waiter order is available in active session");
   }
 
   return addWaiterOrder({
@@ -1052,63 +1064,61 @@ export async function getWaiterShiftSummary(input: {
 
   const shiftStartedAt = refreshSession?.createdAt ?? new Date();
 
-  const [tasksHandled, responseTasks, activeTablesCount, waiterOrdersCount, serviceCompletedCount] = await Promise.all([
-    prisma.waiterTask.count({
-      where: {
-        waiterId: input.waiterId,
-        status: "completed",
-        completedAt: { gte: shiftStartedAt },
-      },
-    }),
-    prisma.waiterTask.findMany({
-      where: {
-        waiterId: input.waiterId,
-        createdAt: { gte: shiftStartedAt },
-        OR: [
-          { acknowledgedAt: { not: null } },
-          { startedAt: { not: null } },
-          { completedAt: { not: null } },
-        ],
-      },
-      select: {
-        createdAt: true,
-        acknowledgedAt: true,
-        startedAt: true,
-        completedAt: true,
-      },
-    }),
-    prisma.restaurantTable.count({
-      where: {
-        archivedAt: null,
-        assignments: {
-          some: {
-            waiterId: input.waiterId,
-            endedAt: null,
-          },
-        },
-        sessions: {
-          some: {
-            closedAt: null,
-          },
-        },
-      },
-    }),
-    prisma.billLine.count({
-      where: {
-        source: "waiter",
-        createdAt: { gte: shiftStartedAt },
-        waiterOrderBatch: {
+  const [tasksHandled, responseTasks, activeTablesCount, waiterOrdersCount, serviceCompletedCount, reviewMetrics] =
+    await Promise.all([
+      prisma.waiterTask.count({
+        where: {
           waiterId: input.waiterId,
+          status: "completed",
+          completedAt: { gte: shiftStartedAt },
         },
-      },
-    }),
-    prisma.reviewPrompt.count({
-      where: {
-        waiterId: input.waiterId,
-        createdAt: { gte: shiftStartedAt },
-      },
-    }),
-  ]);
+      }),
+      prisma.waiterTask.findMany({
+        where: {
+          waiterId: input.waiterId,
+          createdAt: { gte: shiftStartedAt },
+          OR: [{ acknowledgedAt: { not: null } }, { startedAt: { not: null } }, { completedAt: { not: null } }],
+        },
+        select: {
+          createdAt: true,
+          acknowledgedAt: true,
+          startedAt: true,
+          completedAt: true,
+        },
+      }),
+      prisma.restaurantTable.count({
+        where: {
+          archivedAt: null,
+          assignments: {
+            some: {
+              waiterId: input.waiterId,
+              endedAt: null,
+            },
+          },
+          sessions: {
+            some: {
+              closedAt: null,
+            },
+          },
+        },
+      }),
+      prisma.billLine.count({
+        where: {
+          source: "waiter",
+          createdAt: { gte: shiftStartedAt },
+          waiterOrderBatch: {
+            waiterId: input.waiterId,
+          },
+        },
+      }),
+      prisma.reviewPrompt.count({
+        where: {
+          waiterId: input.waiterId,
+          createdAt: { gte: shiftStartedAt },
+        },
+      }),
+      getWaiterReviewMetrics(input.waiterId),
+    ]);
 
   const responseSeconds = responseTasks
     .map((task) => {
@@ -1128,7 +1138,23 @@ export async function getWaiterShiftSummary(input: {
     activeTablesCount,
     waiterOrdersCount,
     serviceCompletedCount,
+    avgRatingAllTime: reviewMetrics.avgRatingAllTime,
+    reviewsCountAllTime: reviewMetrics.reviewsCountAllTime,
+    commentsCountAllTime: reviewMetrics.commentsCountAllTime,
   };
+}
+
+export async function getWaiterReviews(input: {
+  waiterId: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<ReviewHistoryPage> {
+  await loadWaiterProfile(input.waiterId);
+  return getReviewHistoryPage({
+    waiterId: input.waiterId,
+    cursor: input.cursor,
+    limit: input.limit,
+  });
 }
 
 export async function registerPushDevice(
