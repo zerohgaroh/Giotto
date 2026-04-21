@@ -596,15 +596,19 @@
 
     return {
       tableId: config.tableId || "",
+      numericTableId: normalizeTableId(config.tableId),
       requestType: config.requestType || "waiter",
       actionLabel: config.actionLabel || "Позвать официанта",
       cooldownUrl: config.cooldownUrl || "",
       requestUrl: config.requestUrl || "",
+      sseUrl: config.sseUrl || "",
       nowMs: Date.now(),
       expiresAt: 0,
       localCooldownUntil: 0,
+      completedUntilMs: 0,
       timerError: "",
       tickInterval: null,
+      eventSource: null,
 
       init() {
         this.tickInterval = window.setInterval(() => {
@@ -612,12 +616,17 @@
         }, 250);
 
         this.syncCooldown();
+        this.bindRealtime();
       },
 
       destroy() {
         if (this.tickInterval) {
           window.clearInterval(this.tickInterval);
           this.tickInterval = null;
+        }
+        if (this.eventSource) {
+          this.eventSource.close();
+          this.eventSource = null;
         }
       },
 
@@ -633,6 +642,10 @@
 
       get requested() {
         return this.remaining > 0;
+      },
+
+      get completedRecently() {
+        return this.completedUntilMs > this.nowMs;
       },
 
       get canRecall() {
@@ -653,6 +666,60 @@
 
       formatCountdown,
 
+      markCompleted() {
+        const currentNow = Date.now();
+        this.expiresAt = 0;
+        this.localCooldownUntil = 0;
+        this.completedUntilMs = currentNow + 20_000;
+        this.nowMs = currentNow;
+        this.timerError = "";
+      },
+
+      bindRealtime() {
+        if (!this.numericTableId || typeof EventSource === "undefined") {
+          return;
+        }
+
+        const realtimeUrl =
+          this.sseUrl || `/api/table/${encodeURIComponent(String(this.numericTableId))}/realtime`;
+        this.eventSource = new EventSource(realtimeUrl);
+
+        this.eventSource.addEventListener("waiter:acknowledged", (event) => {
+          let payload;
+          try {
+            payload = JSON.parse(event.data);
+          } catch {
+            return;
+          }
+
+          if (payload.tableId !== this.numericTableId) {
+            return;
+          }
+
+          const eventType = payload.payload && payload.payload.requestType;
+          if (eventType && eventType !== this.requestType) {
+            return;
+          }
+
+          this.markCompleted();
+        });
+
+        this.eventSource.addEventListener("waiter:done", (event) => {
+          let payload;
+          try {
+            payload = JSON.parse(event.data);
+          } catch {
+            return;
+          }
+
+          if (payload.tableId !== this.numericTableId) {
+            return;
+          }
+
+          this.markCompleted();
+        });
+      },
+
       async syncCooldown() {
         try {
           const response = await fetch(this.cooldownUrl, {
@@ -670,6 +737,9 @@
           if (this.expiresAt <= currentNow && this.localCooldownUntil <= currentNow) {
             this.localCooldownUntil = 0;
           }
+          if (this.expiresAt > currentNow) {
+            this.completedUntilMs = 0;
+          }
           this.nowMs = currentNow;
           this.timerError = "";
         } catch {
@@ -684,8 +754,10 @@
 
         const previousExpiresAt = this.expiresAt;
         const previousLocalCooldownUntil = this.localCooldownUntil;
+        const previousCompletedUntilMs = this.completedUntilMs;
         const currentNow = Date.now();
         this.localCooldownUntil = currentNow + WAIT_SEC * 1000;
+        this.completedUntilMs = 0;
         this.nowMs = currentNow;
         this.timerError = "";
 
@@ -718,6 +790,7 @@
         } catch (error) {
           this.expiresAt = previousExpiresAt;
           this.localCooldownUntil = previousLocalCooldownUntil;
+          this.completedUntilMs = previousCompletedUntilMs;
           this.nowMs = Date.now();
           this.timerError = error instanceof Error ? error.message : "Не удалось отправить вызов";
         }

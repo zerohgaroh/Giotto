@@ -42,9 +42,9 @@
         <section class="motion-surface relative mt-5 overflow-hidden rounded-[2.2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.86))] px-5 pt-6 shadow-card backdrop-blur-md" style="padding-bottom: 50px;">
           <div class="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top,rgba(184,146,74,0.14),transparent_72%)]"></div>
           <div class="text-center">
-            <span class="inline-flex rounded-full border border-giotto-gold/35 bg-giotto-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-giotto-navy-deep" x-text="requested ? (requestType === 'bill' ? 'Запрос счёта' : 'Вызов отправлен') : 'Сервис за столом'"></span>
-            <h1 class="mt-2 font-serif text-[2.15rem] font-semibold leading-none text-giotto-navy-deep" x-text="requested ? (requestType === 'bill' ? 'Готовим счёт' : 'Официант вызван') : actionLabel"></h1>
-            <p class="mx-auto mt-3 max-w-sm text-[14px] leading-relaxed text-giotto-muted" x-text="requested ? (requestType === 'bill' ? 'Повторный запрос счёта будет доступен через 2 минуты.' : 'Повторно позвать официанта можно только после окончания таймера.') : 'Нажмите кнопку ниже, чтобы отправить запрос именно по вашему столу.'"></p>
+            <span class="inline-flex rounded-full border border-giotto-gold/35 bg-giotto-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-giotto-navy-deep" x-text="requested ? (requestType === 'bill' ? 'Запрос счёта' : 'Вызов отправлен') : (completedRecently ? 'Выполнено' : 'Сервис за столом')"></span>
+            <h1 class="mt-2 font-serif text-[2.15rem] font-semibold leading-none text-giotto-navy-deep" x-text="requested ? (requestType === 'bill' ? 'Готовим счёт' : 'Официант вызван') : (completedRecently ? (requestType === 'bill' ? 'Счёт подан' : 'Официант подошёл') : actionLabel)"></h1>
+            <p class="mx-auto mt-3 max-w-sm text-[14px] leading-relaxed text-giotto-muted" x-text="requested ? (requestType === 'bill' ? 'Повторный запрос счёта будет доступен через 2 минуты.' : 'Повторно позвать официанта можно только после окончания таймера.') : (completedRecently ? 'Запрос выполнен. Если потребуется, можно отправить новый вызов.' : 'Нажмите кнопку ниже, чтобы отправить запрос именно по вашему столу.')"></p>
           </div>
 
           <div class="mx-auto mt-8 flex flex-col items-center">

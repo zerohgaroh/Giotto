@@ -140,6 +140,7 @@ export function createWebRouter() {
           tableLabel: locals.tableLabel,
           cooldownUrl: `/api/table/${encodeURIComponent(tableId)}/request?type=${requestType}`,
           requestUrl: `/api/table/${encodeURIComponent(tableId)}/request`,
+          sseUrl: `/api/table/${encodeURIComponent(tableId)}/realtime`,
         },
       });
     }),

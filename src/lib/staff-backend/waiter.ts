@@ -381,6 +381,7 @@ export async function acknowledgeWaiterTask(input: {
             payload: {
               requestId: task.sourceRequestId,
               acknowledgedAt: now.getTime(),
+              requestType: task.sourceRequest?.type,
             },
           },
           {
@@ -460,6 +461,7 @@ export async function startWaiterTask(input: {
             payload: {
               requestId: task.sourceRequestId,
               acknowledgedAt: now.getTime(),
+              requestType: task.sourceRequest?.type,
             },
           },
           {
@@ -533,6 +535,22 @@ export async function completeWaiterTask(input: {
           resolvedAt: now,
         },
       });
+
+      if (task.sourceRequest?.type === "bill") {
+        await tx.tableSession.update({
+          where: { id: task.tableSessionId },
+          data: {
+            billCooldownUntil: now,
+          },
+        });
+      } else if (task.sourceRequest?.type === "waiter") {
+        await tx.tableSession.update({
+          where: { id: task.tableSessionId },
+          data: {
+            waiterCooldownUntil: now,
+          },
+        });
+      }
     }
   });
 
@@ -549,6 +567,7 @@ export async function completeWaiterTask(input: {
             payload: {
               requestId: task.sourceRequestId,
               acknowledgedAt: now.getTime(),
+              requestType: task.sourceRequest?.type,
             },
           },
           {
