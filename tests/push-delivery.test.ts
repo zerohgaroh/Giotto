@@ -6,7 +6,11 @@ import {
   collectInvalidFcmTokens,
   selectPreferredPushTargets,
 } from "../src/lib/staff-backend/push-delivery";
-import { __resetPushDeliveryStateForTests, pushWaiterServiceAlert } from "../src/lib/staff-backend/notifications";
+import {
+  __resetPushDeliveryStateForTests,
+  pushWaiterServiceAlert,
+  verifyPushDeliveryStartup,
+} from "../src/lib/staff-backend/notifications";
 import { registerPushDevice } from "../src/lib/staff-backend/waiter";
 
 test("selectPreferredPushTargets prefers native Android FCM tokens over Expo tokens for the same device", () => {
@@ -139,6 +143,29 @@ test("pushWaiterServiceAlert soft-fails when Firebase credentials are missing", 
     warnings.some((entry) => String(entry[0] ?? "").includes("GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON")),
     "expected missing Firebase credentials warning",
   );
+});
+
+test("verifyPushDeliveryStartup reports disabled when Firebase credentials are missing", async () => {
+  const previousFirebaseConfig = process.env.GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON;
+  __resetPushDeliveryStateForTests();
+  delete process.env.GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON;
+
+  try {
+    const result = await verifyPushDeliveryStartup();
+    assert.deepEqual(result, {
+      status: "disabled",
+      provider: "fcm",
+      reason: "missing_env",
+      message: "GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON is missing",
+    });
+  } finally {
+    __resetPushDeliveryStateForTests();
+    if (previousFirebaseConfig === undefined) {
+      delete process.env.GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON;
+    } else {
+      process.env.GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON = previousFirebaseConfig;
+    }
+  }
 });
 
 test("registerPushDevice clears stale tokens for the same app installation before upserting", async () => {

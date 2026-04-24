@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApps, initializeApp, type Credential } from "firebase-admin/app";
 import { getMessaging, type Messaging } from "firebase-admin/messaging";
 import { prisma } from "./prisma";
 import {
@@ -20,6 +20,7 @@ const EXPO_PUSH_MAX_ATTEMPTS = 3;
 const EXPO_PUSH_RETRY_DELAYS_MS = [500, 1_500];
 const FCM_BATCH_SIZE = 500;
 const FCM_APP_NAME = "giotto-staff-fcm";
+const FCM_STARTUP_CHECK_TIMEOUT_MS = 8_000;
 const pushDebugEnabled = process.env.GIOTTO_PUSH_DEBUG === "1" || process.env.NODE_ENV !== "production";
 
 type ExpoPushTicket = {
@@ -51,6 +52,65 @@ type FirebaseServiceAccountConfig = {
   privateKey: string;
 };
 
+type FirebaseSetupFailureReason =
+  | "missing_env"
+  | "parse_failed"
+  | "invalid_config"
+  | "init_failed"
+  | "missing_credential";
+
+type FirebaseServiceAccountLoadResult =
+  | {
+      ok: true;
+      config: FirebaseServiceAccountConfig;
+    }
+  | {
+      ok: false;
+      reason: "missing_env" | "parse_failed" | "invalid_config";
+      message: string;
+      error?: string;
+    };
+
+type FirebaseAdminSetupResult =
+  | {
+      ok: true;
+      config: FirebaseServiceAccountConfig;
+      credential: Credential;
+      messaging: Messaging;
+    }
+  | {
+      ok: false;
+      reason: FirebaseSetupFailureReason;
+      message: string;
+      error?: string;
+      projectId?: string;
+      clientEmail?: string;
+    };
+
+export type PushStartupCheckResult =
+  | {
+      status: "ready";
+      provider: "fcm";
+      projectId: string;
+      clientEmail: string;
+      accessTokenExpiresInSec: number;
+    }
+  | {
+      status: "disabled";
+      provider: "fcm";
+      reason: "missing_env";
+      message: string;
+    }
+  | {
+      status: "failed";
+      provider: "fcm";
+      reason: FirebaseSetupFailureReason | "access_token_failed";
+      message: string;
+      error?: string;
+      projectId?: string;
+      clientEmail?: string;
+    };
+
 let firebaseMessagingClient: Messaging | null | undefined;
 let firebaseConfigWarningShown = false;
 
@@ -78,6 +138,23 @@ function logPushDebug(event: string, details?: Record<string, unknown>) {
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 function chunk<T>(items: T[], size: number) {
@@ -182,11 +259,14 @@ function warnFirebaseConfig(message: string, error?: unknown) {
   console.warn(message);
 }
 
-function loadFirebaseServiceAccount(): FirebaseServiceAccountConfig | null {
+function loadFirebaseServiceAccount(): FirebaseServiceAccountLoadResult {
   const raw = process.env.GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
   if (!raw) {
-    warnFirebaseConfig("[push] Missing GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON, skipping direct FCM delivery");
-    return null;
+    return {
+      ok: false,
+      reason: "missing_env",
+      message: "GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON is missing",
+    };
   }
 
   try {
@@ -215,14 +295,101 @@ function loadFirebaseServiceAccount(): FirebaseServiceAccountConfig | null {
     }
 
     return {
-      projectId,
-      clientEmail,
-      privateKey: privateKey.replace(/\\n/g, "\n"),
+      ok: true,
+      config: {
+        projectId,
+        clientEmail,
+        privateKey: privateKey.replace(/\\n/g, "\n"),
+      },
     };
   } catch (error) {
-    warnFirebaseConfig("[push] Failed to parse GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON", error);
-    return null;
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to parse GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON";
+    const reason = message.includes("project_id") ? "invalid_config" : "parse_failed";
+    return {
+      ok: false,
+      reason,
+      message: "GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON is invalid",
+      error: message,
+    };
   }
+}
+
+function resolveFirebaseAdminSetup(): FirebaseAdminSetupResult {
+  const serviceAccount = loadFirebaseServiceAccount();
+  if (!serviceAccount.ok) {
+    return {
+      ok: false,
+      reason: serviceAccount.reason,
+      message: serviceAccount.message,
+      error: serviceAccount.error,
+    };
+  }
+
+  try {
+    const hadMessagingClient = Boolean(firebaseMessagingClient);
+    const app =
+      getApps().find((item) => item.name === FCM_APP_NAME) ??
+      initializeApp(
+        {
+          credential: cert({
+            projectId: serviceAccount.config.projectId,
+            clientEmail: serviceAccount.config.clientEmail,
+            privateKey: serviceAccount.config.privateKey,
+          }),
+          projectId: serviceAccount.config.projectId,
+        },
+        FCM_APP_NAME,
+      );
+
+    const credential = app.options.credential;
+    if (!credential || typeof credential.getAccessToken !== "function") {
+      return {
+        ok: false,
+        reason: "missing_credential",
+        message: "Firebase Admin credential is unavailable after initialization",
+        projectId: serviceAccount.config.projectId,
+        clientEmail: serviceAccount.config.clientEmail,
+      };
+    }
+
+    const messaging = firebaseMessagingClient ?? getMessaging(app);
+    firebaseMessagingClient = messaging;
+    if (!hadMessagingClient) {
+      logPushDebug("firebase_admin_initialized", {
+        projectId: serviceAccount.config.projectId,
+        clientEmail: serviceAccount.config.clientEmail,
+      });
+    }
+    return {
+      ok: true,
+      config: serviceAccount.config,
+      credential,
+      messaging,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: "init_failed",
+      message: "Failed to initialize Firebase Admin for direct FCM delivery",
+      error: error instanceof Error ? error.message : String(error),
+      projectId: serviceAccount.config.projectId,
+      clientEmail: serviceAccount.config.clientEmail,
+    };
+  }
+}
+
+function warnFirebaseSetupFailure(result: Exclude<FirebaseAdminSetupResult, { ok: true }>) {
+  warnFirebaseConfig(
+    `[push] ${result.message}${
+      result.projectId ? ` (projectId=${result.projectId}` : ""
+    }${result.clientEmail ? `${result.projectId ? ", " : " ("}clientEmail=${result.clientEmail}` : ""}${
+      result.projectId || result.clientEmail ? ")" : ""
+    }`,
+    result.error ? new Error(result.error) : undefined,
+  );
 }
 
 async function getFirebaseMessagingClient() {
@@ -230,38 +397,14 @@ async function getFirebaseMessagingClient() {
     return firebaseMessagingClient;
   }
 
-  const serviceAccount = loadFirebaseServiceAccount();
-  if (!serviceAccount) {
+  const setup = resolveFirebaseAdminSetup();
+  if (!setup.ok) {
+    warnFirebaseSetupFailure(setup);
     firebaseMessagingClient = null;
     return null;
   }
 
-  try {
-    const app =
-      getApps().find((item) => item.name === FCM_APP_NAME) ??
-      initializeApp(
-        {
-          credential: cert({
-            projectId: serviceAccount.projectId,
-            clientEmail: serviceAccount.clientEmail,
-            privateKey: serviceAccount.privateKey,
-          }),
-          projectId: serviceAccount.projectId,
-        },
-        FCM_APP_NAME,
-      );
-
-    firebaseMessagingClient = getMessaging(app);
-    logPushDebug("firebase_admin_initialized", {
-      projectId: serviceAccount.projectId,
-      clientEmail: serviceAccount.clientEmail,
-    });
-    return firebaseMessagingClient;
-  } catch (error) {
-    warnFirebaseConfig("[push] Failed to initialize Firebase Admin for direct FCM delivery", error);
-    firebaseMessagingClient = null;
-    return null;
-  }
+  return setup.messaging;
 }
 
 async function sendExpoBatch(batch: ExpoPushMessage[]) {
@@ -475,6 +618,56 @@ function mergeSendOutcomes(...outcomes: PushSendOutcome[]): PushSendOutcome {
 export function __resetPushDeliveryStateForTests() {
   firebaseMessagingClient = undefined;
   firebaseConfigWarningShown = false;
+}
+
+export async function verifyPushDeliveryStartup(): Promise<PushStartupCheckResult> {
+  const setup = resolveFirebaseAdminSetup();
+  if (!setup.ok) {
+    if (setup.reason === "missing_env") {
+      return {
+        status: "disabled",
+        provider: "fcm",
+        reason: setup.reason,
+        message: setup.message,
+      };
+    }
+
+    return {
+      status: "failed",
+      provider: "fcm",
+      reason: setup.reason,
+      message: setup.message,
+      error: setup.error,
+      projectId: setup.projectId,
+      clientEmail: setup.clientEmail,
+    };
+  }
+
+  try {
+    const accessToken = await withTimeout(
+      setup.credential.getAccessToken(),
+      FCM_STARTUP_CHECK_TIMEOUT_MS,
+      `Timed out after ${FCM_STARTUP_CHECK_TIMEOUT_MS}ms while requesting Firebase access token`,
+    );
+
+    return {
+      status: "ready",
+      provider: "fcm",
+      projectId: setup.config.projectId,
+      clientEmail: setup.config.clientEmail,
+      accessTokenExpiresInSec: accessToken.expires_in,
+    };
+  } catch (error) {
+    return {
+      status: "failed",
+      provider: "fcm",
+      reason: "access_token_failed",
+      message: "Failed to obtain Firebase access token during startup check",
+      error: error instanceof Error ? error.message : String(error),
+      projectId: setup.config.projectId,
+      clientEmail: setup.config.clientEmail,
+    };
+  }
 }
 
 export async function pushWaiterServiceAlert(input: {

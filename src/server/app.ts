@@ -2,11 +2,37 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import path from "path";
 import { maybeRunStaffBackendMaintenance } from "../lib/staff-backend/maintenance";
+import { verifyPushDeliveryStartup } from "../lib/staff-backend/notifications";
 import { createApiRouter } from "./routes/api";
 import { createWebRouter } from "./routes/web";
 import { serializeForScript, wantsHtml } from "./http";
 
 export async function createApp() {
+  if (process.env.NODE_ENV !== "test") {
+    console.log("[startup] Verifying FCM push configuration");
+    const pushStartup = await verifyPushDeliveryStartup();
+    if (pushStartup.status === "ready") {
+      console.log("[startup] FCM push configuration is ready", {
+        projectId: pushStartup.projectId,
+        clientEmail: pushStartup.clientEmail,
+        accessTokenExpiresInSec: pushStartup.accessTokenExpiresInSec,
+      });
+    } else if (pushStartup.status === "disabled") {
+      console.warn("[startup] FCM push configuration is disabled", {
+        reason: pushStartup.reason,
+        message: pushStartup.message,
+      });
+    } else {
+      console.warn("[startup] FCM push configuration check failed", {
+        reason: pushStartup.reason,
+        message: pushStartup.message,
+        error: pushStartup.error,
+        projectId: pushStartup.projectId,
+        clientEmail: pushStartup.clientEmail,
+      });
+    }
+  }
+
   const app = express();
 
   app.disable("x-powered-by");
