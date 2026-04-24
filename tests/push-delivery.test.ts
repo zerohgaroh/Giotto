@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { prisma } from "../src/lib/staff-backend/prisma";
 import {
+  buildWaiterAlertCollapseKey,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
   selectPreferredPushTargets,
@@ -41,6 +42,10 @@ test("selectPreferredPushTargets prefers native Android FCM tokens over Expo tok
       deviceId: "device-2",
     },
     {
+      token: "ExpoPushToken[legacy-android-token]",
+      platform: "expo",
+    },
+    {
       token: "fcm-without-device-id",
       platform: "android",
     },
@@ -58,17 +63,21 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
     type: "order",
     itemCount: 3,
     totalAmount: 45000,
+    sentAt: 1_700_000_000_000,
   });
 
   assert.deepEqual(message.tokens, ["fcm-token-1"]);
-  assert.equal(message.notification?.title, "Table 7 - New order");
+  assert.equal(message.notification?.title, "Стол 7 оформил заказ");
   assert.equal(message.data?.tableId, "7");
   assert.equal(message.data?.requestType, "order");
   assert.equal(message.data?.itemCount, "3");
   assert.equal(message.data?.totalAmount, "45000");
+  assert.equal(message.data?.sentAt, "1700000000000");
   assert.equal(message.android?.priority, "high");
-  assert.equal(message.android?.ttl, 300_000);
+  assert.equal(message.android?.ttl, 60_000);
+  assert.equal(message.android?.collapseKey, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
   assert.equal(message.android?.notification?.channelId, "giotto-service-alerts");
+  assert.equal(message.android?.notification?.tag, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
 });
 
 test("collectInvalidFcmTokens returns only invalid or unregistered device tokens", () => {
@@ -210,6 +219,13 @@ test("registerPushDevice clears stale tokens for the same app installation befor
         NOT: {
           token: "fcm-token-new",
         },
+      },
+    },
+    {
+      where: {
+        staffUserId: "waiter-1",
+        platform: "expo",
+        deviceId: null,
       },
     },
   ]);

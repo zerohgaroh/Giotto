@@ -1247,6 +1247,20 @@ export async function registerPushDevice(
     });
   }
 
+  if (input.platform === "android") {
+    const deletedLegacyExpo = await prisma.pushDevice.deleteMany({
+      where: {
+        staffUserId: session.userId,
+        platform: "expo",
+        deviceId: null,
+      },
+    });
+    console.info("[push][server] register_push_device_legacy_expo_cleanup", {
+      waiterId: session.userId,
+      deletedCount: deletedLegacyExpo.count,
+    });
+  }
+
   await prisma.pushDevice.upsert({
     where: { token },
     update: {

@@ -35,8 +35,7 @@ export async function createGuestRequest(input: {
 }): Promise<{ cooldown: CooldownState; accepted: boolean }> {
   await ensureStaffBackendReady();
 
-  const reason =
-    input.reason?.trim() || (input.type === "bill" ? "Guests are ready to pay" : "Guests requested a waiter");
+  const reason = input.reason?.trim() || (input.type === "bill" ? "Гости готовы оплатить заказ." : "Гости ждут официанта.");
 
   const now = new Date();
   let waiterId: string | undefined;

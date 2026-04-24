@@ -16,6 +16,7 @@ export type WaiterServiceAlertPayload = {
   itemCount?: number;
   totalAmount?: number;
   traceId?: string;
+  sentAt?: number;
 };
 
 export type ExpoPushMessage = {
@@ -39,9 +40,11 @@ export type FcmMulticastMessage = {
   android?: {
     priority?: "normal" | "high";
     ttl?: number;
+    collapseKey?: string;
     notification?: {
       channelId?: string;
       sound?: string;
+      tag?: string;
     };
   };
 };
@@ -61,7 +64,7 @@ export type FcmBatchResponseLike = {
 };
 
 export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts";
-export const WAITER_ALERT_TTL_SEC = 300;
+export const WAITER_ALERT_TTL_SEC = 60;
 export const WAITER_ALERT_TTL_MS = WAITER_ALERT_TTL_SEC * 1_000;
 
 const EXPO_PUSH_TOKEN_PATTERN = /^(ExponentPushToken|ExpoPushToken)\[[^\]]+\]$/;
@@ -95,25 +98,51 @@ export function isExpoPushToken(value: string) {
   return EXPO_PUSH_TOKEN_PATTERN.test(normalizeToken(value));
 }
 
+function normalizeAlertReason(requestType: WaiterServiceAlertType, reason?: string) {
+  const normalized = typeof reason === "string" ? reason.trim() : "";
+  if (!normalized) return "";
+
+  const canonical = normalized.replace(/\.+$/u, "").trim().toLowerCase();
+  if (canonical === "guests requested a waiter") {
+    return "Гости ждут официанта.";
+  }
+  if (canonical === "guests are ready to pay") {
+    return "Гости готовы оплатить заказ.";
+  }
+  if (canonical === "new order from guest cart") {
+    return "Гости отправили заказ из корзины.";
+  }
+  if (/^\d+\s+items?\s+from guest cart$/u.test(canonical)) {
+    return "Гости отправили заказ из корзины.";
+  }
+
+  return normalized;
+}
+
+export function buildWaiterAlertCollapseKey(input: WaiterServiceAlertPayload) {
+  return `waiter:${input.tableId}:${input.type}`;
+}
+
 export function getServiceAlertCopy(input: WaiterServiceAlertPayload) {
+  const normalizedReason = normalizeAlertReason(input.type, input.reason);
+
   if (input.type === "bill") {
     return {
-      title: `Table ${input.tableId} - Bill requested`,
-      body: input.reason || "Guests are ready to pay",
+      title: `Стол ${input.tableId} просит счёт`,
+      body: normalizedReason || "Гости готовы оплатить заказ.",
     };
   }
 
   if (input.type === "order") {
-    const itemText = input.itemCount ? `${input.itemCount} item${input.itemCount === 1 ? "" : "s"}` : "New order";
     return {
-      title: `Table ${input.tableId} - New order`,
-      body: input.reason || `${itemText} from guest cart.`,
+      title: `Стол ${input.tableId} оформил заказ`,
+      body: normalizedReason || (input.itemCount ? `${input.itemCount} поз. из корзины гостя.` : "Гости отправили заказ из корзины."),
     };
   }
 
   return {
-    title: `Table ${input.tableId} - Waiter requested`,
-    body: input.reason || "Guests requested a waiter",
+    title: `Стол ${input.tableId} вызывает официанта`,
+    body: normalizedReason || "Гости ждут официанта.",
   };
 }
 
@@ -126,6 +155,9 @@ export function buildWaiterAlertData(input: WaiterServiceAlertPayload) {
 
   if (typeof input.traceId === "string" && input.traceId.trim()) {
     data.traceId = input.traceId.trim();
+  }
+  if (typeof input.sentAt === "number" && Number.isFinite(input.sentAt) && input.sentAt > 0) {
+    data.sentAt = String(Math.floor(input.sentAt));
   }
 
   const itemCount = normalizeOptionalNumber(input.itemCount);
@@ -158,6 +190,7 @@ export function buildExpoPushMessages(tokens: string[], input: WaiterServiceAler
 
 export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceAlertPayload): FcmMulticastMessage {
   const copy = getServiceAlertCopy(input);
+  const collapseKey = buildWaiterAlertCollapseKey(input);
 
   return {
     tokens,
@@ -169,9 +202,11 @@ export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceA
     android: {
       priority: "high",
       ttl: WAITER_ALERT_TTL_MS,
+      collapseKey,
       notification: {
         channelId: NOTIFICATION_CHANNEL_ID,
         sound: "default",
+        tag: collapseKey,
       },
     },
   };
@@ -211,6 +246,9 @@ export function selectPreferredPushTargets(devices: PushDeviceRecord[]) {
 
     const deviceId = normalizeDeviceId(device.deviceId);
     if (deviceId && nativeAndroidDeviceIds.has(deviceId)) {
+      continue;
+    }
+    if (!deviceId && fcmTokens.length > 0) {
       continue;
     }
 

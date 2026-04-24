@@ -711,6 +711,7 @@ export async function pushWaiterServiceAlert(input: {
     const payload: WaiterServiceAlertPayload = {
       ...input,
       traceId,
+      sentAt: Date.now(),
     };
     const devices = await prisma.pushDevice.findMany({
       where: { staffUserId: input.waiterId },
