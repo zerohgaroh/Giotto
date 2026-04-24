@@ -178,6 +178,14 @@ export async function createGuestRequest(input: {
     ]);
     publishActivityEvents(events);
 
+    console.info("[push][server] guest_service_request_push_dispatch", {
+      waiterId,
+      tableId: input.tableId,
+      requestType: input.type,
+      accepted,
+      serviceRequestId,
+      tableSessionId,
+    });
     await pushWaiterCallNotification({
       waiterId,
       tableId: input.tableId,
@@ -324,6 +332,14 @@ export async function submitGuestOrder(input: {
   ]);
   publishActivityEvents(events);
 
+  console.info("[push][server] guest_order_push_dispatch", {
+    waiterId,
+    tableId: input.tableId,
+    tableSessionId,
+    taskId: taskId || null,
+    itemCount,
+    totalAmount,
+  });
   await pushWaiterServiceAlert({
     waiterId,
     tableId: input.tableId,

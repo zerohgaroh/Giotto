@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging, type Messaging } from "firebase-admin/messaging";
 import { prisma } from "./prisma";
@@ -5,6 +6,7 @@ import {
   buildExpoPushMessages,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
+  previewPushToken,
   selectPreferredPushTargets,
   type ExpoPushMessage,
   type WaiterServiceAlertPayload,
@@ -18,6 +20,7 @@ const EXPO_PUSH_MAX_ATTEMPTS = 3;
 const EXPO_PUSH_RETRY_DELAYS_MS = [500, 1_500];
 const FCM_BATCH_SIZE = 500;
 const FCM_APP_NAME = "giotto-staff-fcm";
+const pushDebugEnabled = process.env.GIOTTO_PUSH_DEBUG === "1" || process.env.NODE_ENV !== "production";
 
 type ExpoPushTicket = {
   status?: "ok" | "error";
@@ -60,6 +63,17 @@ function createPushSendOutcome(attempted = 0): PushSendOutcome {
     retried: 0,
     failureReasons: {},
   };
+}
+
+function logPushDebug(event: string, details?: Record<string, unknown>) {
+  if (!pushDebugEnabled) return;
+
+  if (details) {
+    console.info("[push][server]", event, details);
+    return;
+  }
+
+  console.info("[push][server]", event);
 }
 
 function wait(ms: number) {
@@ -112,6 +126,22 @@ function resolveExpoTicketReason(ticket: ExpoPushTicket | undefined, responseErr
   return "unknown";
 }
 
+function summarizePushDevices(
+  devices: Array<{
+    platform: string;
+    token: string;
+    deviceId?: string | null;
+    updatedAt?: Date | null;
+  }>,
+) {
+  return devices.map((device) => ({
+    platform: device.platform,
+    tokenPreview: previewPushToken(device.token),
+    deviceId: device.deviceId ?? null,
+    updatedAt: device.updatedAt?.toISOString() ?? null,
+  }));
+}
+
 async function prunePushTokens(tokens: Set<string>) {
   if (tokens.size === 0) {
     return 0;
@@ -124,6 +154,10 @@ async function prunePushTokens(tokens: Set<string>) {
           in: [...tokens],
         },
       },
+    });
+    logPushDebug("stale_tokens_pruned", {
+      deletedCount: deleted.count,
+      tokenPreviews: [...tokens].map(previewPushToken),
     });
     return deleted.count;
   } catch (error) {
@@ -218,6 +252,10 @@ async function getFirebaseMessagingClient() {
       );
 
     firebaseMessagingClient = getMessaging(app);
+    logPushDebug("firebase_admin_initialized", {
+      projectId: serviceAccount.projectId,
+      clientEmail: serviceAccount.clientEmail,
+    });
     return firebaseMessagingClient;
   } catch (error) {
     warnFirebaseConfig("[push] Failed to initialize Firebase Admin for direct FCM delivery", error);
@@ -258,6 +296,11 @@ async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise<PushSe
   }
 
   const pruneTokens = new Set<string>();
+  logPushDebug("expo_delivery_started", {
+    attempted: messages.length,
+    tokenPreviews: messages.map((message) => previewPushToken(message.to)),
+    traceIds: [...new Set(messages.map((message) => (typeof message.data.traceId === "string" ? message.data.traceId : null)).filter(Boolean))],
+  });
 
   for (const batch of chunk(messages, EXPO_PUSH_BATCH_SIZE)) {
     let response: ExpoPushResponse | null = null;
@@ -287,10 +330,27 @@ async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise<PushSe
     if (!response) {
       summary.failed += batch.length;
       trackFailure(summary, lastError instanceof Error ? lastError.message : "network_error", batch.length);
+      logPushDebug("expo_batch_failed_without_response", {
+        batchSize: batch.length,
+        tokenPreviews: batch.map((message) => previewPushToken(message.to)),
+        error: lastError instanceof Error ? lastError.message : String(lastError),
+      });
       continue;
     }
 
     const tickets = Array.isArray(response.data) ? response.data : [];
+    let batchFailures = 0;
+    const failureSamples = tickets
+      .map((ticket, index) =>
+        ticket?.status === "ok"
+          ? null
+          : {
+              tokenPreview: previewPushToken(batch[index].to),
+              reason: resolveExpoTicketReason(ticket, response.errors),
+            },
+      )
+      .filter(Boolean)
+      .slice(0, 3);
     for (let index = 0; index < batch.length; index += 1) {
       const ticket = tickets[index];
       if (ticket?.status === "ok") {
@@ -299,12 +359,20 @@ async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise<PushSe
       }
 
       summary.failed += 1;
+      batchFailures += 1;
       const reason = resolveExpoTicketReason(ticket, response.errors);
       trackFailure(summary, reason);
       if (reason === "DeviceNotRegistered") {
         pruneTokens.add(batch[index].to);
       }
     }
+
+    logPushDebug("expo_batch_completed", {
+      batchSize: batch.length,
+      sent: batch.length - batchFailures,
+      failed: batchFailures,
+      failureSamples,
+    });
   }
 
   summary.pruned = await prunePushTokens(pruneTokens);
@@ -321,16 +389,37 @@ async function sendFcmPushMessages(tokens: string[], input: WaiterServiceAlertPa
   if (!messaging) {
     summary.failed = tokens.length;
     trackFailure(summary, "fcm_unavailable", tokens.length);
+    logPushDebug("fcm_delivery_unavailable", {
+      attempted: tokens.length,
+      tokenPreviews: tokens.map(previewPushToken),
+      traceId: input.traceId,
+    });
     return summary;
   }
 
   const pruneTokens = new Set<string>();
+  logPushDebug("fcm_delivery_started", {
+    attempted: tokens.length,
+    tokenPreviews: tokens.map(previewPushToken),
+    traceId: input.traceId,
+  });
 
   for (const batch of chunk(tokens, FCM_BATCH_SIZE)) {
     try {
       const response = await messaging.sendEachForMulticast(buildFcmMulticastMessage(batch, input));
       summary.sent += response.successCount;
       summary.failed += response.failureCount;
+      const failureSamples = response.responses
+        .map((item, index) =>
+          item.success
+            ? null
+            : {
+                tokenPreview: previewPushToken(batch[index]),
+                reason: item.error?.code?.trim() || item.error?.message?.trim() || "unknown",
+              },
+        )
+        .filter(Boolean)
+        .slice(0, 3);
 
       response.responses.forEach((item) => {
         if (item.success) {
@@ -344,9 +433,23 @@ async function sendFcmPushMessages(tokens: string[], input: WaiterServiceAlertPa
       for (const token of collectInvalidFcmTokens(batch, response)) {
         pruneTokens.add(token);
       }
+
+      logPushDebug("fcm_batch_completed", {
+        batchSize: batch.length,
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+        failureSamples,
+        traceId: input.traceId,
+      });
     } catch (error) {
       summary.failed += batch.length;
       trackFailure(summary, error instanceof Error ? error.message : "fcm_send_failed", batch.length);
+      logPushDebug("fcm_batch_failed", {
+        batchSize: batch.length,
+        tokenPreviews: batch.map(previewPushToken),
+        traceId: input.traceId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -382,20 +485,43 @@ export async function pushWaiterServiceAlert(input: {
   itemCount?: number;
   totalAmount?: number;
 }) {
+  const traceId = randomUUID();
+
   if (!input.waiterId) {
+    logPushDebug("waiter_service_alert_skipped_missing_waiter", {
+      tableId: input.tableId,
+      requestType: input.type,
+      traceId,
+    });
     return;
   }
 
   try {
+    const payload: WaiterServiceAlertPayload = {
+      ...input,
+      traceId,
+    };
     const devices = await prisma.pushDevice.findMany({
       where: { staffUserId: input.waiterId },
       orderBy: { updatedAt: "desc" },
     });
     const targets = selectPreferredPushTargets(devices);
+    logPushDebug("waiter_service_alert_devices_loaded", {
+      waiterId: input.waiterId,
+      tableId: input.tableId,
+      requestType: input.type,
+      traceId: payload.traceId,
+      deviceCount: devices.length,
+      devices: summarizePushDevices(devices),
+      selectedTargets: {
+        fcm: targets.fcmTokens.map(previewPushToken),
+        expo: targets.expoTokens.map(previewPushToken),
+      },
+    });
 
     const [fcmOutcome, expoOutcome] = await Promise.all([
-      sendFcmPushMessages(targets.fcmTokens, input),
-      sendExpoPushMessages(buildExpoPushMessages(targets.expoTokens, input)),
+      sendFcmPushMessages(targets.fcmTokens, payload),
+      sendExpoPushMessages(buildExpoPushMessages(targets.expoTokens, payload)),
     ]);
     const outcome = mergeSendOutcomes(fcmOutcome, expoOutcome);
 
@@ -403,6 +529,7 @@ export async function pushWaiterServiceAlert(input: {
       waiterId: input.waiterId,
       tableId: input.tableId,
       requestType: input.type,
+      traceId: payload.traceId,
       fcmTargets: targets.fcmTokens.length,
       expoTargets: targets.expoTokens.length,
       attempted: outcome.attempted,
@@ -420,6 +547,7 @@ export async function pushWaiterServiceAlert(input: {
       waiterId: input.waiterId,
       tableId: input.tableId,
       requestType: input.type,
+      traceId,
       error: error instanceof Error ? error.message : String(error),
     });
   }

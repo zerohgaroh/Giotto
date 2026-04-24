@@ -1223,14 +1223,27 @@ export async function registerPushDevice(
     throw new ApiError(400, "Push token is required");
   }
 
+  console.info("[push][server] register_push_device_started", {
+    waiterId: session.userId,
+    platform: input.platform,
+    deviceId,
+    appVersion,
+    tokenPreview: token.length <= 22 ? token : `${token.slice(0, 14)}...${token.slice(-8)}`,
+  });
+
   if (deviceId) {
-    await prisma.pushDevice.deleteMany({
+    const deleted = await prisma.pushDevice.deleteMany({
       where: {
         deviceId,
         NOT: {
           token,
         },
       },
+    });
+    console.info("[push][server] register_push_device_cleanup", {
+      waiterId: session.userId,
+      deviceId,
+      deletedCount: deleted.count,
     });
   }
 
@@ -1249,6 +1262,14 @@ export async function registerPushDevice(
       deviceId,
       appVersion,
     },
+  });
+
+  console.info("[push][server] register_push_device_completed", {
+    waiterId: session.userId,
+    platform: input.platform,
+    deviceId,
+    appVersion,
+    tokenPreview: token.length <= 22 ? token : `${token.slice(0, 14)}...${token.slice(-8)}`,
   });
 
   return { ok: true };

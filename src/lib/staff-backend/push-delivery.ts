@@ -16,6 +16,7 @@ export type WaiterServiceAlertPayload = {
   reason?: string;
   itemCount?: number;
   totalAmount?: number;
+  traceId?: string;
 };
 
 export type ExpoPushMessage = {
@@ -41,6 +42,13 @@ const INVALID_FCM_TOKEN_CODES = new Set([
 
 function normalizeToken(input: string) {
   return input.trim();
+}
+
+export function previewPushToken(input: string) {
+  const token = normalizeToken(input);
+  if (!token) return "(empty)";
+  if (token.length <= 22) return token;
+  return `${token.slice(0, 14)}...${token.slice(-8)}`;
 }
 
 function normalizeDeviceId(input: string | null | undefined) {
@@ -85,6 +93,10 @@ export function buildWaiterAlertData(input: WaiterServiceAlertPayload) {
     screen: "WaiterTable",
     requestType: input.type,
   };
+
+  if (typeof input.traceId === "string" && input.traceId.trim()) {
+    data.traceId = input.traceId.trim();
+  }
 
   const itemCount = normalizeOptionalNumber(input.itemCount);
   if (itemCount) {
