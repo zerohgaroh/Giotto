@@ -1,4 +1,3 @@
-import type { BatchResponse, MulticastMessage } from "firebase-admin/messaging";
 import type { PushPlatform, ServiceRequestType } from "./types";
 
 export type WaiterServiceAlertType = ServiceRequestType | "order";
@@ -28,6 +27,37 @@ export type ExpoPushMessage = {
   title: string;
   body: string;
   data: Record<string, unknown>;
+};
+
+export type FcmMulticastMessage = {
+  tokens: string[];
+  notification?: {
+    title?: string;
+    body?: string;
+  };
+  data?: Record<string, string>;
+  android?: {
+    priority?: "normal" | "high";
+    ttl?: number;
+    notification?: {
+      channelId?: string;
+      sound?: string;
+    };
+  };
+};
+
+export type FcmBatchItemResponseLike = {
+  success: boolean;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+export type FcmBatchResponseLike = {
+  responses: FcmBatchItemResponseLike[];
+  successCount?: number;
+  failureCount?: number;
 };
 
 export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts";
@@ -126,7 +156,7 @@ export function buildExpoPushMessages(tokens: string[], input: WaiterServiceAler
   }));
 }
 
-export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceAlertPayload): MulticastMessage {
+export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceAlertPayload): FcmMulticastMessage {
   const copy = getServiceAlertCopy(input);
 
   return {
@@ -199,10 +229,10 @@ export function selectPreferredPushTargets(devices: PushDeviceRecord[]) {
   };
 }
 
-export function collectInvalidFcmTokens(tokens: string[], response: Pick<BatchResponse, "responses">) {
+export function collectInvalidFcmTokens(tokens: string[], response: Pick<FcmBatchResponseLike, "responses">) {
   const invalidTokens: string[] = [];
 
-  response.responses.forEach((item, index) => {
+  response.responses.forEach((item: FcmBatchItemResponseLike, index: number) => {
     if (item.success) {
       return;
     }

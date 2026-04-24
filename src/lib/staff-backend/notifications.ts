@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { cert, getApps, initializeApp, type Credential } from "firebase-admin/app";
-import { getMessaging, type Messaging } from "firebase-admin/messaging";
+import admin from "firebase-admin";
 import { prisma } from "./prisma";
 import {
   buildExpoPushMessages,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
+  type FcmBatchItemResponseLike,
+  type FcmBatchResponseLike,
+  type FcmMulticastMessage,
   previewPushToken,
   selectPreferredPushTargets,
   type ExpoPushMessage,
@@ -52,6 +54,19 @@ type FirebaseServiceAccountConfig = {
   privateKey: string;
 };
 
+type FirebaseCredential = {
+  getAccessToken(): Promise<GoogleOAuthAccessTokenLike>;
+};
+
+type FirebaseMessagingClient = {
+  sendEachForMulticast(message: FcmMulticastMessage): Promise<FcmBatchResponseLike>;
+};
+
+type GoogleOAuthAccessTokenLike = {
+  access_token: string;
+  expires_in: number;
+};
+
 type FirebaseSetupFailureReason =
   | "missing_env"
   | "parse_failed"
@@ -75,8 +90,8 @@ type FirebaseAdminSetupResult =
   | {
       ok: true;
       config: FirebaseServiceAccountConfig;
-      credential: Credential;
-      messaging: Messaging;
+      credential: FirebaseCredential;
+      messaging: FirebaseMessagingClient;
     }
   | {
       ok: false;
@@ -111,7 +126,7 @@ export type PushStartupCheckResult =
       clientEmail?: string;
     };
 
-let firebaseMessagingClient: Messaging | null | undefined;
+let firebaseMessagingClient: FirebaseMessagingClient | null | undefined;
 let firebaseConfigWarningShown = false;
 
 function createPushSendOutcome(attempted = 0): PushSendOutcome {
@@ -330,11 +345,14 @@ function resolveFirebaseAdminSetup(): FirebaseAdminSetupResult {
 
   try {
     const hadMessagingClient = Boolean(firebaseMessagingClient);
+    const existingApp = admin.apps.find(
+      (item): item is admin.app.App => item !== null && item.name === FCM_APP_NAME,
+    );
     const app =
-      getApps().find((item) => item.name === FCM_APP_NAME) ??
-      initializeApp(
+      existingApp ??
+      admin.initializeApp(
         {
-          credential: cert({
+          credential: admin.credential.cert({
             projectId: serviceAccount.config.projectId,
             clientEmail: serviceAccount.config.clientEmail,
             privateKey: serviceAccount.config.privateKey,
@@ -344,7 +362,7 @@ function resolveFirebaseAdminSetup(): FirebaseAdminSetupResult {
         FCM_APP_NAME,
       );
 
-    const credential = app.options.credential;
+    const credential = app.options.credential as FirebaseCredential | undefined;
     if (!credential || typeof credential.getAccessToken !== "function") {
       return {
         ok: false,
@@ -355,7 +373,7 @@ function resolveFirebaseAdminSetup(): FirebaseAdminSetupResult {
       };
     }
 
-    const messaging = firebaseMessagingClient ?? getMessaging(app);
+    const messaging = firebaseMessagingClient ?? (admin.messaging(app) as FirebaseMessagingClient);
     firebaseMessagingClient = messaging;
     if (!hadMessagingClient) {
       logPushDebug("firebase_admin_initialized", {
@@ -550,10 +568,10 @@ async function sendFcmPushMessages(tokens: string[], input: WaiterServiceAlertPa
   for (const batch of chunk(tokens, FCM_BATCH_SIZE)) {
     try {
       const response = await messaging.sendEachForMulticast(buildFcmMulticastMessage(batch, input));
-      summary.sent += response.successCount;
-      summary.failed += response.failureCount;
+      summary.sent += response.successCount ?? 0;
+      summary.failed += response.failureCount ?? 0;
       const failureSamples = response.responses
-        .map((item, index) =>
+        .map((item: FcmBatchItemResponseLike, index: number) =>
           item.success
             ? null
             : {
@@ -564,7 +582,7 @@ async function sendFcmPushMessages(tokens: string[], input: WaiterServiceAlertPa
         .filter(Boolean)
         .slice(0, 3);
 
-      response.responses.forEach((item) => {
+      response.responses.forEach((item: FcmBatchItemResponseLike) => {
         if (item.success) {
           return;
         }
