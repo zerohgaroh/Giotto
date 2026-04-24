@@ -1215,24 +1215,39 @@ export async function registerPushDevice(
   },
   input: PushDeviceRegistration,
 ) {
-  if (!input.token.trim()) {
+  const token = input.token.trim();
+  const deviceId = input.deviceId?.trim() || null;
+  const appVersion = input.appVersion?.trim() || null;
+
+  if (!token) {
     throw new ApiError(400, "Push token is required");
   }
 
+  if (deviceId) {
+    await prisma.pushDevice.deleteMany({
+      where: {
+        deviceId,
+        NOT: {
+          token,
+        },
+      },
+    });
+  }
+
   await prisma.pushDevice.upsert({
-    where: { token: input.token.trim() },
+    where: { token },
     update: {
       staffUserId: session.userId,
       platform: input.platform,
-      deviceId: input.deviceId?.trim() || null,
-      appVersion: input.appVersion?.trim() || null,
+      deviceId,
+      appVersion,
     },
     create: {
       staffUserId: session.userId,
-      token: input.token.trim(),
+      token,
       platform: input.platform,
-      deviceId: input.deviceId?.trim() || null,
-      appVersion: input.appVersion?.trim() || null,
+      deviceId,
+      appVersion,
     },
   });
 

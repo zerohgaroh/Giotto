@@ -23,8 +23,14 @@ npm run dev
 - `GIOTTO_BETA_SERVER_URL` (default: `http://localhost:3000`)
 - `GIOTTO_FORCE_DEMO_BACKEND=1` — принудительно использовать локальный demo backend
 - `GIOTTO_DEMO_JWT_SECRET` — секрет подписи demo JWT
+- `GIOTTO_FIREBASE_SERVICE_ACCOUNT_JSON` — Firebase service account JSON для direct FCM доставки waiter push на Android
 
 Примечание: логины/пароли официантов и менеджеров хранятся в `hall` state (DB слой), а не в env.
+
+## Push notifications
+- Waiter Android push отправляются напрямую через Firebase Cloud Messaging, а не через Expo Push Service.
+- Мобильное приложение регистрирует native FCM token через `getDevicePushTokenAsync()`.
+- Старые Expo-токены остаются временным fallback только для ещё не обновлённых устройств.
 
 ## Основные маршруты
 - Гость:
