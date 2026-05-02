@@ -51,7 +51,7 @@ export type FcmBatchResponseLike = {
   failureCount?: number;
 };
 
-export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts-v2";
+export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts-v3";
 export const NOTIFICATION_SOUND_FILENAME = "waiter_alert_alarm.wav";
 export const ANDROID_ALERT_VIBRATION_PATTERN = [0, 550, 220, 850, 220, 1200];
 export const WAITER_ALERT_TTL_SEC = 60;
