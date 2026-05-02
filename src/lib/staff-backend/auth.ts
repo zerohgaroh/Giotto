@@ -71,6 +71,21 @@ async function revokeRefreshSession(sessionId: string) {
   });
 }
 
+async function detachPushDevice(input: { staffUserId: string; deviceId: string }) {
+  await prisma.pushDevice.deleteMany({
+    where: {
+      staffUserId: input.staffUserId,
+      deviceId: input.deviceId,
+    },
+  });
+}
+
+function normalizeBearerToken(token: string | undefined) {
+  const normalized = token?.trim();
+  if (!normalized) return undefined;
+  return normalized.replace(/^Bearer\s+/i, "");
+}
+
 export async function loginStaff(login: string, password: string): Promise<StaffLoginResponse> {
   await ensureStaffBackendReady();
 
@@ -156,15 +171,28 @@ export async function refreshStaffSession(refreshToken: string): Promise<StaffLo
   return next;
 }
 
-export async function logoutStaff(input: { refreshToken?: string; accessToken?: string }) {
+export async function logoutStaff(input: { refreshToken?: string; accessToken?: string; deviceId?: string }) {
+  const deviceId = input.deviceId?.trim();
   const refreshPayload = parseRefreshToken(input.refreshToken);
   if (refreshPayload) {
+    if (deviceId) {
+      await detachPushDevice({
+        staffUserId: refreshPayload.userId,
+        deviceId,
+      });
+    }
     await revokeRefreshSession(refreshPayload.sessionId);
     return { ok: true };
   }
 
-  const access = parseAccessToken(input.accessToken);
+  const access = parseAccessToken(normalizeBearerToken(input.accessToken));
   if (access) {
+    if (deviceId) {
+      await detachPushDevice({
+        staffUserId: access.userId,
+        deviceId,
+      });
+    }
     await revokeRefreshSession(access.sessionId);
   }
 

@@ -21,7 +21,7 @@ export type WaiterServiceAlertPayload = {
 
 export type ExpoPushMessage = {
   to: string;
-  sound: "default";
+  sound: string;
   priority: "high";
   channelId: string;
   ttl: number;
@@ -63,7 +63,8 @@ export type FcmBatchResponseLike = {
   failureCount?: number;
 };
 
-export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts";
+export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts-v2";
+export const NOTIFICATION_SOUND_FILENAME = "waiter_alert_alarm.wav";
 export const WAITER_ALERT_TTL_SEC = 60;
 export const WAITER_ALERT_TTL_MS = WAITER_ALERT_TTL_SEC * 1_000;
 
@@ -178,7 +179,7 @@ export function buildExpoPushMessages(tokens: string[], input: WaiterServiceAler
 
   return tokens.map((token) => ({
     to: token,
-    sound: "default",
+    sound: NOTIFICATION_SOUND_FILENAME,
     priority: "high",
     channelId: NOTIFICATION_CHANNEL_ID,
     ttl: WAITER_ALERT_TTL_SEC,
@@ -205,7 +206,7 @@ export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceA
       collapseKey,
       notification: {
         channelId: NOTIFICATION_CHANNEL_ID,
-        sound: "default",
+        sound: NOTIFICATION_SOUND_FILENAME,
         tag: collapseKey,
       },
     },

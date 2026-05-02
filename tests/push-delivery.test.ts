@@ -3,8 +3,11 @@ import test from "node:test";
 import { prisma } from "../src/lib/staff-backend/prisma";
 import {
   buildWaiterAlertCollapseKey,
+  buildExpoPushMessages,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
+  NOTIFICATION_CHANNEL_ID,
+  NOTIFICATION_SOUND_FILENAME,
   selectPreferredPushTargets,
 } from "../src/lib/staff-backend/push-delivery";
 import {
@@ -12,6 +15,8 @@ import {
   pushWaiterServiceAlert,
   verifyPushDeliveryStartup,
 } from "../src/lib/staff-backend/notifications";
+import { logoutStaff } from "../src/lib/staff-backend/auth";
+import { issueAccessToken, issueRefreshToken } from "../src/lib/staff-backend/tokens";
 import { registerPushDevice } from "../src/lib/staff-backend/waiter";
 
 test("selectPreferredPushTargets prefers native Android FCM tokens over Expo tokens for the same device", () => {
@@ -76,8 +81,22 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
   assert.equal(message.android?.priority, "high");
   assert.equal(message.android?.ttl, 60_000);
   assert.equal(message.android?.collapseKey, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
-  assert.equal(message.android?.notification?.channelId, "giotto-service-alerts");
+  assert.equal(message.android?.notification?.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message.android?.notification?.sound, NOTIFICATION_SOUND_FILENAME);
   assert.equal(message.android?.notification?.tag, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
+});
+
+test("buildExpoPushMessages keeps the same custom sound and channel for fallback delivery", () => {
+  const [message] = buildExpoPushMessages(["ExpoPushToken[test-device]"], {
+    tableId: 7,
+    type: "waiter",
+    sentAt: 1_700_000_000_000,
+  });
+
+  assert.equal(message.sound, NOTIFICATION_SOUND_FILENAME);
+  assert.equal(message.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message.data.tableId, "7");
+  assert.equal(message.data.requestType, "waiter");
 });
 
 test("collectInvalidFcmTokens returns only invalid or unregistered device tokens", () => {
@@ -247,4 +266,114 @@ test("registerPushDevice clears stale tokens for the same app installation befor
       },
     },
   ]);
+});
+
+test("logoutStaff detaches only the matching device when refresh token is provided", async () => {
+  const pushDeviceModel = prisma.pushDevice as {
+    deleteMany: typeof prisma.pushDevice.deleteMany;
+  };
+  const refreshSessionModel = prisma.staffRefreshSession as {
+    updateMany: typeof prisma.staffRefreshSession.updateMany;
+  };
+  const originalDeleteMany = pushDeviceModel.deleteMany;
+  const originalUpdateMany = refreshSessionModel.updateMany;
+
+  const pushDeleteCalls: unknown[] = [];
+  const sessionUpdateCalls: unknown[] = [];
+
+  pushDeviceModel.deleteMany = (async (args: unknown) => {
+    pushDeleteCalls.push(args);
+    return { count: 1 };
+  }) as typeof prisma.pushDevice.deleteMany;
+  refreshSessionModel.updateMany = (async (args: unknown) => {
+    sessionUpdateCalls.push(args);
+    return { count: 1 };
+  }) as typeof prisma.staffRefreshSession.updateMany;
+
+  const refreshToken = issueRefreshToken({
+    role: "waiter",
+    userId: "waiter-1",
+    name: "Waiter One",
+    sessionId: "session-1",
+  });
+
+  try {
+    await logoutStaff({
+      refreshToken,
+      deviceId: "  device-1  ",
+    });
+  } finally {
+    pushDeviceModel.deleteMany = originalDeleteMany;
+    refreshSessionModel.updateMany = originalUpdateMany;
+  }
+
+  assert.deepEqual(pushDeleteCalls, [
+    {
+      where: {
+        staffUserId: "waiter-1",
+        deviceId: "device-1",
+      },
+    },
+  ]);
+  assert.equal(sessionUpdateCalls.length, 1);
+  assert.deepEqual((sessionUpdateCalls[0] as { where: unknown }).where, {
+    id: "session-1",
+    revokedAt: null,
+  });
+  assert.ok(((sessionUpdateCalls[0] as { data: { revokedAt: unknown } }).data.revokedAt) instanceof Date);
+});
+
+test("logoutStaff detaches by device id when only access token is available", async () => {
+  const pushDeviceModel = prisma.pushDevice as {
+    deleteMany: typeof prisma.pushDevice.deleteMany;
+  };
+  const refreshSessionModel = prisma.staffRefreshSession as {
+    updateMany: typeof prisma.staffRefreshSession.updateMany;
+  };
+  const originalDeleteMany = pushDeviceModel.deleteMany;
+  const originalUpdateMany = refreshSessionModel.updateMany;
+
+  const pushDeleteCalls: unknown[] = [];
+  const sessionUpdateCalls: unknown[] = [];
+
+  pushDeviceModel.deleteMany = (async (args: unknown) => {
+    pushDeleteCalls.push(args);
+    return { count: 1 };
+  }) as typeof prisma.pushDevice.deleteMany;
+  refreshSessionModel.updateMany = (async (args: unknown) => {
+    sessionUpdateCalls.push(args);
+    return { count: 1 };
+  }) as typeof prisma.staffRefreshSession.updateMany;
+
+  const accessToken = issueAccessToken({
+    role: "waiter",
+    userId: "waiter-2",
+    name: "Waiter Two",
+    sessionId: "session-2",
+  });
+
+  try {
+    await logoutStaff({
+      accessToken: `Bearer ${accessToken}`,
+      deviceId: "device-2",
+    });
+  } finally {
+    pushDeviceModel.deleteMany = originalDeleteMany;
+    refreshSessionModel.updateMany = originalUpdateMany;
+  }
+
+  assert.deepEqual(pushDeleteCalls, [
+    {
+      where: {
+        staffUserId: "waiter-2",
+        deviceId: "device-2",
+      },
+    },
+  ]);
+  assert.equal(sessionUpdateCalls.length, 1);
+  assert.deepEqual((sessionUpdateCalls[0] as { where: unknown }).where, {
+    id: "session-2",
+    revokedAt: null,
+  });
+  assert.ok(((sessionUpdateCalls[0] as { data: { revokedAt: unknown } }).data.revokedAt) instanceof Date);
 });

@@ -338,6 +338,7 @@ export function createApiRouter() {
         await logoutStaff({
           refreshToken: typeof body.refreshToken === "string" ? body.refreshToken : undefined,
           accessToken: req.get("authorization") || undefined,
+          deviceId: typeof body.deviceId === "string" ? body.deviceId : undefined,
         }),
       );
     }),
