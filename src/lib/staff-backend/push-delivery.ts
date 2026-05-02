@@ -43,8 +43,11 @@ export type FcmMulticastMessage = {
     collapseKey?: string;
     notification?: {
       channelId?: string;
+      priority?: "min" | "low" | "default" | "high" | "max";
       sound?: string;
       tag?: string;
+      defaultVibrateTimings?: boolean;
+      vibrateTimingsMillis?: number[];
     };
   };
 };
@@ -65,6 +68,7 @@ export type FcmBatchResponseLike = {
 
 export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts-v2";
 export const NOTIFICATION_SOUND_FILENAME = "waiter_alert_alarm.wav";
+export const ANDROID_ALERT_VIBRATION_PATTERN = [0, 550, 220, 850, 220, 1200];
 export const WAITER_ALERT_TTL_SEC = 60;
 export const WAITER_ALERT_TTL_MS = WAITER_ALERT_TTL_SEC * 1_000;
 
@@ -206,8 +210,11 @@ export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceA
       collapseKey,
       notification: {
         channelId: NOTIFICATION_CHANNEL_ID,
+        priority: "max",
         sound: NOTIFICATION_SOUND_FILENAME,
         tag: collapseKey,
+        defaultVibrateTimings: false,
+        vibrateTimingsMillis: ANDROID_ALERT_VIBRATION_PATTERN,
       },
     },
   };

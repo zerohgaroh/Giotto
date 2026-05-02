@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { prisma } from "../src/lib/staff-backend/prisma";
 import {
+  ANDROID_ALERT_VIBRATION_PATTERN,
   buildWaiterAlertCollapseKey,
   buildExpoPushMessages,
   buildFcmMulticastMessage,
@@ -82,7 +83,10 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
   assert.equal(message.android?.ttl, 60_000);
   assert.equal(message.android?.collapseKey, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
   assert.equal(message.android?.notification?.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message.android?.notification?.priority, "max");
   assert.equal(message.android?.notification?.sound, NOTIFICATION_SOUND_FILENAME);
+  assert.equal(message.android?.notification?.defaultVibrateTimings, false);
+  assert.deepEqual(message.android?.notification?.vibrateTimingsMillis, ANDROID_ALERT_VIBRATION_PATTERN);
   assert.equal(message.android?.notification?.tag, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
 });
 
