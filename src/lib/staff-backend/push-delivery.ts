@@ -21,34 +21,19 @@ export type WaiterServiceAlertPayload = {
 
 export type ExpoPushMessage = {
   to: string;
-  sound: string;
   priority: "high";
-  channelId: string;
   ttl: number;
-  title: string;
-  body: string;
   data: Record<string, unknown>;
+  _contentAvailable?: boolean;
 };
 
 export type FcmMulticastMessage = {
   tokens: string[];
-  notification?: {
-    title?: string;
-    body?: string;
-  };
   data?: Record<string, string>;
   android?: {
     priority?: "normal" | "high";
     ttl?: number;
     collapseKey?: string;
-    notification?: {
-      channelId?: string;
-      priority?: "min" | "low" | "default" | "high" | "max";
-      sound?: string;
-      tag?: string;
-      defaultVibrateTimings?: boolean;
-      vibrateTimingsMillis?: number[];
-    };
   };
 };
 
@@ -178,44 +163,49 @@ export function buildWaiterAlertData(input: WaiterServiceAlertPayload) {
   return data;
 }
 
-export function buildExpoPushMessages(tokens: string[], input: WaiterServiceAlertPayload): ExpoPushMessage[] {
+function buildAndroidPresentationData(
+  input: WaiterServiceAlertPayload,
+  presentationMode: "native-data-only" | "local-task",
+) {
   const copy = getServiceAlertCopy(input);
+  const alertData = buildWaiterAlertData(input);
+  const collapseKey = buildWaiterAlertCollapseKey(input);
+
+  return {
+    ...alertData,
+    title: copy.title,
+    message: copy.body,
+    body: JSON.stringify(alertData),
+    sound: NOTIFICATION_SOUND_FILENAME,
+    channelId: NOTIFICATION_CHANNEL_ID,
+    vibrate: JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN),
+    tag: collapseKey,
+    presentationMode,
+  };
+}
+
+export function buildExpoPushMessages(tokens: string[], input: WaiterServiceAlertPayload): ExpoPushMessage[] {
+  const data = buildAndroidPresentationData(input, "local-task");
 
   return tokens.map((token) => ({
     to: token,
-    sound: NOTIFICATION_SOUND_FILENAME,
     priority: "high",
-    channelId: NOTIFICATION_CHANNEL_ID,
     ttl: WAITER_ALERT_TTL_SEC,
-    title: copy.title,
-    body: copy.body,
-    data: buildWaiterAlertData(input),
+    data,
+    _contentAvailable: true,
   }));
 }
 
 export function buildFcmMulticastMessage(tokens: string[], input: WaiterServiceAlertPayload): FcmMulticastMessage {
-  const copy = getServiceAlertCopy(input);
   const collapseKey = buildWaiterAlertCollapseKey(input);
 
   return {
     tokens,
-    notification: {
-      title: copy.title,
-      body: copy.body,
-    },
-    data: buildWaiterAlertData(input),
+    data: buildAndroidPresentationData(input, "native-data-only"),
     android: {
       priority: "high",
       ttl: WAITER_ALERT_TTL_MS,
       collapseKey,
-      notification: {
-        channelId: NOTIFICATION_CHANNEL_ID,
-        priority: "max",
-        sound: NOTIFICATION_SOUND_FILENAME,
-        tag: collapseKey,
-        defaultVibrateTimings: false,
-        vibrateTimingsMillis: ANDROID_ALERT_VIBRATION_PATTERN,
-      },
     },
   };
 }

@@ -73,21 +73,32 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
   });
 
   assert.deepEqual(message.tokens, ["fcm-token-1"]);
-  assert.equal(message.notification?.title, "Стол 7 оформил заказ");
   assert.equal(message.data?.tableId, "7");
   assert.equal(message.data?.requestType, "order");
   assert.equal(message.data?.itemCount, "3");
   assert.equal(message.data?.totalAmount, "45000");
   assert.equal(message.data?.sentAt, "1700000000000");
+  assert.equal(message.data?.title, "Стол 7 оформил заказ");
+  assert.equal(message.data?.message, "3 поз. из корзины гостя.");
+  assert.equal(
+    message.data?.body,
+    JSON.stringify({
+      tableId: "7",
+      screen: "WaiterTable",
+      requestType: "order",
+      sentAt: "1700000000000",
+      itemCount: "3",
+      totalAmount: "45000",
+    }),
+  );
+  assert.equal(message.data?.sound, NOTIFICATION_SOUND_FILENAME);
+  assert.equal(message.data?.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message.data?.vibrate, JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN));
+  assert.equal(message.data?.presentationMode, "native-data-only");
+  assert.equal(message.data?.tag, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
   assert.equal(message.android?.priority, "high");
   assert.equal(message.android?.ttl, 60_000);
   assert.equal(message.android?.collapseKey, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
-  assert.equal(message.android?.notification?.channelId, NOTIFICATION_CHANNEL_ID);
-  assert.equal(message.android?.notification?.priority, "max");
-  assert.equal(message.android?.notification?.sound, NOTIFICATION_SOUND_FILENAME);
-  assert.equal(message.android?.notification?.defaultVibrateTimings, false);
-  assert.deepEqual(message.android?.notification?.vibrateTimingsMillis, ANDROID_ALERT_VIBRATION_PATTERN);
-  assert.equal(message.android?.notification?.tag, buildWaiterAlertCollapseKey({ tableId: 7, type: "order" }));
 });
 
 test("buildExpoPushMessages keeps the same custom sound and channel for fallback delivery", () => {
@@ -97,10 +108,15 @@ test("buildExpoPushMessages keeps the same custom sound and channel for fallback
     sentAt: 1_700_000_000_000,
   });
 
-  assert.equal(message.sound, NOTIFICATION_SOUND_FILENAME);
-  assert.equal(message.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message._contentAvailable, true);
   assert.equal(message.data.tableId, "7");
   assert.equal(message.data.requestType, "waiter");
+  assert.equal(message.data.title, "Стол 7 вызывает официанта");
+  assert.equal(message.data.message, "Гости ждут официанта.");
+  assert.equal(message.data.sound, NOTIFICATION_SOUND_FILENAME);
+  assert.equal(message.data.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(message.data.vibrate, JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN));
+  assert.equal(message.data.presentationMode, "local-task");
 });
 
 test("collectInvalidFcmTokens returns only invalid or unregistered device tokens", () => {
