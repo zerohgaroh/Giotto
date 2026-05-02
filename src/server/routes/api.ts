@@ -383,14 +383,20 @@ export function createApiRouter() {
       const stream = createSseStream(res);
       stream.push("ready", { at: Date.now(), cursor: cursor ?? null });
 
-      const backlog = await loadRealtimeBacklog({ cursor });
-      for (const event of backlog) {
-        pushStaffRealtimeEvent({
-          stream,
-          event,
-          waiterId,
-          allowedTableIds,
-        });
+      // Staff clients bootstrap their current state via REST (`/staff/me`, waiter queue/tables,
+      // manager hall, etc.), so replaying historical realtime events on the very first
+      // connection only creates false "new alert" UX. We only deliver backlog when the
+      // client reconnects with an explicit cursor and needs to catch up on missed live events.
+      if (cursor) {
+        const backlog = await loadRealtimeBacklog({ cursor });
+        for (const event of backlog) {
+          pushStaffRealtimeEvent({
+            stream,
+            event,
+            waiterId,
+            allowedTableIds,
+          });
+        }
       }
 
       const unsubscribe = subscribeRealtimeEvents((event) => {

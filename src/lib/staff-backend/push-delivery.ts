@@ -54,6 +54,8 @@ export type FcmBatchResponseLike = {
 export const NOTIFICATION_CHANNEL_ID = "giotto-service-alerts-v3";
 export const NOTIFICATION_SOUND_FILENAME = "waiter_alert_alarm.wav";
 export const ANDROID_ALERT_VIBRATION_PATTERN = [0, 550, 220, 850, 220, 1200];
+export const WAITER_ALARM_MODE = "foreground-service";
+export const WAITER_ALARM_RING_DURATION_SEC = 20;
 export const WAITER_ALERT_TTL_SEC = 60;
 export const WAITER_ALERT_TTL_MS = WAITER_ALERT_TTL_SEC * 1_000;
 
@@ -113,6 +115,10 @@ export function buildWaiterAlertCollapseKey(input: WaiterServiceAlertPayload) {
   return `waiter:${input.tableId}:${input.type}`;
 }
 
+export function getWaiterAlertRoute(requestType: WaiterServiceAlertType) {
+  return requestType === "order" ? "waiterTable" : "waiterQueue";
+}
+
 export function getServiceAlertCopy(input: WaiterServiceAlertPayload) {
   const normalizedReason = normalizeAlertReason(input.type, input.reason);
 
@@ -137,10 +143,12 @@ export function getServiceAlertCopy(input: WaiterServiceAlertPayload) {
 }
 
 export function buildWaiterAlertData(input: WaiterServiceAlertPayload) {
+  const route = getWaiterAlertRoute(input.type);
   const data: Record<string, string> = {
     tableId: String(input.tableId),
     screen: "WaiterTable",
     requestType: input.type,
+    route,
   };
 
   if (typeof input.traceId === "string" && input.traceId.trim()) {
@@ -176,6 +184,8 @@ function buildAndroidPresentationData(
     title: copy.title,
     message: copy.body,
     body: JSON.stringify(alertData),
+    alarmMode: WAITER_ALARM_MODE,
+    ringDurationSec: String(WAITER_ALARM_RING_DURATION_SEC),
     sound: NOTIFICATION_SOUND_FILENAME,
     channelId: NOTIFICATION_CHANNEL_ID,
     vibrate: JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN),

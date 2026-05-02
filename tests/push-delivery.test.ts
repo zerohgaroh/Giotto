@@ -7,9 +7,12 @@ import {
   buildExpoPushMessages,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
+  getWaiterAlertRoute,
   NOTIFICATION_CHANNEL_ID,
   NOTIFICATION_SOUND_FILENAME,
   selectPreferredPushTargets,
+  WAITER_ALARM_MODE,
+  WAITER_ALARM_RING_DURATION_SEC,
 } from "../src/lib/staff-backend/push-delivery";
 import {
   __resetPushDeliveryStateForTests,
@@ -75,6 +78,7 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
   assert.deepEqual(message.tokens, ["fcm-token-1"]);
   assert.equal(message.data?.tableId, "7");
   assert.equal(message.data?.requestType, "order");
+  assert.equal(message.data?.route, getWaiterAlertRoute("order"));
   assert.equal(message.data?.itemCount, "3");
   assert.equal(message.data?.totalAmount, "45000");
   assert.equal(message.data?.sentAt, "1700000000000");
@@ -86,11 +90,14 @@ test("buildFcmMulticastMessage stringifies payload data and keeps Android high-p
       tableId: "7",
       screen: "WaiterTable",
       requestType: "order",
+      route: "waiterTable",
       sentAt: "1700000000000",
       itemCount: "3",
       totalAmount: "45000",
     }),
   );
+  assert.equal(message.data?.alarmMode, WAITER_ALARM_MODE);
+  assert.equal(message.data?.ringDurationSec, String(WAITER_ALARM_RING_DURATION_SEC));
   assert.equal(message.data?.sound, NOTIFICATION_SOUND_FILENAME);
   assert.equal(message.data?.channelId, NOTIFICATION_CHANNEL_ID);
   assert.equal(message.data?.vibrate, JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN));
@@ -111,8 +118,11 @@ test("buildExpoPushMessages keeps the same custom sound and channel for fallback
   assert.equal(message._contentAvailable, true);
   assert.equal(message.data.tableId, "7");
   assert.equal(message.data.requestType, "waiter");
+  assert.equal(message.data.route, getWaiterAlertRoute("waiter"));
   assert.equal(message.data.title, "Стол 7 вызывает официанта");
   assert.equal(message.data.message, "Гости ждут официанта.");
+  assert.equal(message.data.alarmMode, WAITER_ALARM_MODE);
+  assert.equal(message.data.ringDurationSec, String(WAITER_ALARM_RING_DURATION_SEC));
   assert.equal(message.data.sound, NOTIFICATION_SOUND_FILENAME);
   assert.equal(message.data.channelId, NOTIFICATION_CHANNEL_ID);
   assert.equal(message.data.vibrate, JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN));
