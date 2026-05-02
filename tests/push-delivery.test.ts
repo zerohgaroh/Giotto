@@ -11,6 +11,8 @@ import {
   NOTIFICATION_CHANNEL_ID,
   NOTIFICATION_SOUND_FILENAME,
   selectPreferredPushTargets,
+  summarizeExpoPushBatchForLogs,
+  summarizeFcmMulticastMessageForLogs,
   WAITER_ALARM_MODE,
   WAITER_ALARM_RING_DURATION_SEC,
 } from "../src/lib/staff-backend/push-delivery";
@@ -127,6 +129,43 @@ test("buildExpoPushMessages keeps the same custom sound and channel for fallback
   assert.equal(message.data.channelId, NOTIFICATION_CHANNEL_ID);
   assert.equal(message.data.vibrate, JSON.stringify(ANDROID_ALERT_VIBRATION_PATTERN));
   assert.equal(message.data.presentationMode, "local-task");
+});
+
+test("summarizeFcmMulticastMessageForLogs exposes a data-only payload shape", () => {
+  const summary = summarizeFcmMulticastMessageForLogs(
+    buildFcmMulticastMessage(["fcm-token-1"], {
+      tableId: 11,
+      type: "bill",
+      traceId: "trace-11",
+      sentAt: 1_700_000_000_000,
+    }),
+  );
+
+  assert.deepEqual(summary.payloadKeys, ["android", "data", "tokens"]);
+  assert.equal(summary.hasNotification, false);
+  assert.equal(summary.notification, null);
+  assert.equal(summary.data?.channelId, NOTIFICATION_CHANNEL_ID);
+  assert.equal(summary.data?.alarmMode, WAITER_ALARM_MODE);
+  assert.equal(summary.data?.presentationMode, "native-data-only");
+  assert.equal(summary.android?.priority, "high");
+});
+
+test("summarizeExpoPushBatchForLogs keeps the shared fallback payload sample", () => {
+  const summary = summarizeExpoPushBatchForLogs(
+    buildExpoPushMessages(["ExpoPushToken[test-device]"], {
+      tableId: 12,
+      type: "waiter",
+      traceId: "trace-12",
+      sentAt: 1_700_000_000_000,
+    }),
+  );
+
+  assert.equal(summary.messageCount, 1);
+  assert.deepEqual(summary.tokenPreviews, ["ExpoPushToken[...-device]"]);
+  assert.equal(summary.sample?.contentAvailable, true);
+  assert.equal(summary.sample?.data.alarmMode, WAITER_ALARM_MODE);
+  assert.equal(summary.sample?.data.presentationMode, "local-task");
+  assert.equal(summary.sample?.data.channelId, NOTIFICATION_CHANNEL_ID);
 });
 
 test("collectInvalidFcmTokens returns only invalid or unregistered device tokens", () => {

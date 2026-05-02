@@ -5,6 +5,8 @@ import {
   buildExpoPushMessages,
   buildFcmMulticastMessage,
   collectInvalidFcmTokens,
+  summarizeExpoPushBatchForLogs,
+  summarizeFcmMulticastMessageForLogs,
   type FcmBatchItemResponseLike,
   type FcmBatchResponseLike,
   type FcmMulticastMessage,
@@ -464,6 +466,10 @@ async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise<PushSe
   });
 
   for (const batch of chunk(messages, EXPO_PUSH_BATCH_SIZE)) {
+    logPushDebug("expo_batch_payload", {
+      batch: summarizeExpoPushBatchForLogs(batch),
+    });
+
     let response: ExpoPushResponse | null = null;
     let lastError: unknown = null;
 
@@ -567,7 +573,12 @@ async function sendFcmPushMessages(tokens: string[], input: WaiterServiceAlertPa
 
   for (const batch of chunk(tokens, FCM_BATCH_SIZE)) {
     try {
-      const response = await messaging.sendEachForMulticast(buildFcmMulticastMessage(batch, input));
+      const message = buildFcmMulticastMessage(batch, input);
+      logPushDebug("fcm_batch_payload", {
+        traceId: input.traceId,
+        message: summarizeFcmMulticastMessageForLogs(message),
+      });
+      const response = await messaging.sendEachForMulticast(message);
       summary.sent += response.successCount ?? 0;
       summary.failed += response.failureCount ?? 0;
       const failureSamples = response.responses
